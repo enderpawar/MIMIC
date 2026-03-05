@@ -1,3 +1,5 @@
+import json
+
 from fastapi import APIRouter, HTTPException
 
 from models.schemas import InterpretRequest, InterpretResponse, Workflow
@@ -12,6 +14,11 @@ async def interpret_route(body: InterpretRequest) -> InterpretResponse:
         actions = [a.model_dump() for a in body.actions]
         result = await interpret(actions)
         workflow = Workflow(**result)
-        return InterpretResponse(workflow=workflow, confidence=0.9)
+        warnings: list[str] = result.get("warnings", [])
+        return InterpretResponse(workflow=workflow, confidence=0.9, warnings=warnings)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(
+            status_code=422, detail=f"Claude 응답 JSON 파싱 실패: {exc}"
+        ) from exc
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
