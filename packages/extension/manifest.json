@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "FlowCap",
+  "version": "0.1.0",
+  "description": "Browser workflow recorder for MIMIC",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "dist/background/service-worker.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["dist/content/capture.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "dist/popup/index.html",
+    "default_title": "FlowCap"
+  }
+}

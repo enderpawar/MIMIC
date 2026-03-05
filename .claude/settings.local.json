@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm install)",
+      "Bash(cmd /c \"cd C:\\\\Users\\\\jinwoo\\\\Desktop\\\\PROJECT\\\\Project_MIMIC && pnpm install\")",
+      "Bash(cmd /c \"pnpm install 2>&1\")",
+      "Bash(cmd /c \"cd /d C:\\\\Users\\\\jinwoo\\\\Desktop\\\\PROJECT\\\\Project_MIMIC && pnpm install && echo INSTALL_DONE\")",
+      "Bash(powershell -Command \"Set-Location ''C:\\\\Users\\\\jinwoo\\\\Desktop\\\\PROJECT\\\\Project_MIMIC''; pnpm install; Write-Host ''DONE''\")",
+      "Bash(powershell -Command \"Set-Location ''C:\\\\Users\\\\jinwoo\\\\Desktop\\\\PROJECT\\\\Project_MIMIC''; $env:Path; Get-Command pnpm -ErrorAction SilentlyContinue\")",
+      "Bash(/c/Users/jinwoo/AppData/Roaming/npm/pnpm install)",
+      "Bash(node --version)",
+      "Bash(/c/Users/jinwoo/Desktop/PROJECT/Project_MIMIC/packages/interpreter/models/settings.py:*)",
+      "Bash(python -m venv .venv)",
+      "Bash(.venv/Scripts/pip install -r requirements.txt)",
+      "Bash(curl -s http://localhost:8000/health)",
+      "Bash(curl -s http://localhost:3001/health)",
+      "Bash(netstat -ano)",
+      "Bash(ss -tlnp)",
+      "Read(//tmp/**)",
+      "Bash(powershell -Command \"\\(Invoke-WebRequest -Uri ''http://localhost:8000/health'' -UseBasicParsing\\).Content\")",
+      "Bash(taskkill //F //PID 332)",
+      "Bash(powershell -Command \"\\(Invoke-WebRequest -Uri ''http://127.0.0.1:8000/health'' -UseBasicParsing\\).Content\")",
+      "Bash(powershell -Command \"\\(Invoke-WebRequest -Uri ''http://127.0.0.1:3001/health'' -UseBasicParsing\\).Content\")",
+      "Bash(powershell -Command \"\\(Invoke-WebRequest -Uri ''http://127.0.0.1:5173'' -UseBasicParsing\\).Content\")",
+      "Bash(powershell -Command \"\\(Invoke-WebRequest -Uri ''http://localhost:5173'' -UseBasicParsing\\).Content\")"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\jinwoo\\AppData\\Local\\Temp"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+version: '3.9'
+
+services:
+  interpreter:
+    build:
+      context: ../packages/interpreter
+    ports:
+      - '8000:8000'
+    env_file:
+      - ../.env
+    environment:
+      - PORT=8000
+
+  runner:
+    build:
+      context: ../packages/runner
+    ports:
+      - '3001:3001'
+    env_file:
+      - ../.env
+    environment:
+      - PORT=3001

@@ -1,0 +1,15 @@
+{
+  "name": "flowcap",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev:editor": "pnpm --filter @flowcap/editor dev",
+    "dev:runner": "pnpm --filter @flowcap/runner dev",
+    "build:shared": "pnpm --filter @flowcap/shared build",
+    "build:extension": "pnpm --filter @flowcap/extension build",
+    "build:editor": "pnpm --filter @flowcap/editor build"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}
