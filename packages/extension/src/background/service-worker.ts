@@ -26,6 +26,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       if (isRecording) {
         capturedActions.push(message.payload as CapturedAction);
         sendResponse({ ok: true });
+      } else {
+        sendResponse({ ok: false });
       }
       break;
 

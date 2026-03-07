@@ -13,11 +13,11 @@ function isExcluded(element: Element): boolean {
 
 // selector 우선순위: id > data-testid > class > tag
 function getSelector(element: Element): string {
-  if (element.id) return `#${element.id}`;
+  if (element.id) return `#${CSS.escape(element.id)}`;
   const testId = element.getAttribute('data-testid');
-  if (testId) return `[data-testid="${testId}"]`;
+  if (testId) return `[data-testid="${CSS.escape(testId)}"]`;
   if (element.className) {
-    const cls = Array.from(element.classList).join('.');
+    const cls = Array.from(element.classList).map(c => CSS.escape(c)).join('.');
     if (cls) return `${element.tagName.toLowerCase()}.${cls}`;
   }
   return element.tagName.toLowerCase();
@@ -25,6 +25,7 @@ function getSelector(element: Element): string {
 
 let actionIndex = 0;
 const sessionActions: CapturedAction[] = [];
+let isRecording = false;
 
 // 페이지 재로드 후 연속성: 기존 저장 액션 로드 및 인덱스 복원
 chrome.storage.local.get(['capturedActions'], (result) => {
@@ -34,7 +35,14 @@ chrome.storage.local.get(['capturedActions'], (result) => {
   actionIndex = sessionActions.length;
 });
 
+// 녹화 상태 동기화
+chrome.runtime.onMessage.addListener((message: { type: string }) => {
+  if (message.type === 'START_RECORDING') isRecording = true;
+  if (message.type === 'STOP_RECORDING') isRecording = false;
+});
+
 function sendAction(action: Omit<CapturedAction, 'index' | 'timestamp' | 'url' | 'pageTitle'>): void {
+  if (!isRecording) return;
   const payload: CapturedAction = {
     ...action,
     index: actionIndex++,
@@ -53,10 +61,20 @@ document.addEventListener('click', (e) => {
   sendAction({ kind: 'click', selector: getSelector(target) });
 }, true);
 
+// input 디바운스: 마지막 값만 저장 (300ms)
+const _inputTimers = new Map<Element, ReturnType<typeof setTimeout>>();
 document.addEventListener('input', (e) => {
   const target = e.target as HTMLInputElement;
   if (isExcluded(target)) return;
-  sendAction({ kind: 'input', selector: getSelector(target), value: target.value });
+  const existing = _inputTimers.get(target);
+  if (existing !== undefined) clearTimeout(existing);
+  _inputTimers.set(
+    target,
+    setTimeout(() => {
+      _inputTimers.delete(target);
+      sendAction({ kind: 'input', selector: getSelector(target), value: target.value });
+    }, 300),
+  );
 }, true);
 
 // navigate: 뒤로/앞으로 버튼 및 해시 변경

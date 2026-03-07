@@ -95,9 +95,11 @@ def test_interpret_mock_mode(mock_client: MagicMock, mock_settings: MagicMock) -
     mock_client.aio.models.generate_content.assert_not_called()
 
 
+@patch("services.interpret_service.settings")
 @patch("services.interpret_service._client")
-def test_interpret_success(mock_client: MagicMock) -> None:
+def test_interpret_success(mock_client: MagicMock, mock_settings: MagicMock) -> None:
     """정상 ActionLog → Gemini 호출 → Workflow JSON 반환."""
+    mock_settings.use_mock = False
     mock_client.aio.models.generate_content = AsyncMock(
         return_value=_make_gemini_response(json.dumps(SAMPLE_WORKFLOW))
     )
@@ -113,9 +115,11 @@ def test_interpret_success(mock_client: MagicMock) -> None:
     assert isinstance(body["warnings"], list)
 
 
+@patch("services.interpret_service.settings")
 @patch("services.interpret_service._client")
-def test_interpret_markdown_json(mock_client: MagicMock) -> None:
+def test_interpret_markdown_json(mock_client: MagicMock, mock_settings: MagicMock) -> None:
     """Gemini가 ```json 블록으로 응답해도 파싱 성공."""
+    mock_settings.use_mock = False
     markdown_text = f"```json\n{json.dumps(SAMPLE_WORKFLOW)}\n```"
     mock_client.aio.models.generate_content = AsyncMock(
         return_value=_make_gemini_response(markdown_text)
@@ -129,9 +133,11 @@ def test_interpret_markdown_json(mock_client: MagicMock) -> None:
     assert resp.json()["workflow"]["id"] == "test-id-001"
 
 
+@patch("services.interpret_service.settings")
 @patch("services.interpret_service._client")
-def test_interpret_empty_actions(mock_client: MagicMock) -> None:
+def test_interpret_empty_actions(mock_client: MagicMock, mock_settings: MagicMock) -> None:
     """actions=[] → trigger만 있는 workflow 반환 시 200."""
+    mock_settings.use_mock = False
     empty_workflow = {
         **SAMPLE_WORKFLOW,
         "id": "empty-001",
@@ -150,9 +156,11 @@ def test_interpret_empty_actions(mock_client: MagicMock) -> None:
     assert resp.json()["workflow"]["id"] == "empty-001"
 
 
+@patch("services.interpret_service.settings")
 @patch("services.interpret_service._client")
-def test_interpret_invalid_json_returns_422(mock_client: MagicMock) -> None:
+def test_interpret_invalid_json_returns_422(mock_client: MagicMock, mock_settings: MagicMock) -> None:
     """Gemini가 JSON이 아닌 텍스트를 반환하면 422."""
+    mock_settings.use_mock = False
     mock_client.aio.models.generate_content = AsyncMock(
         return_value=_make_gemini_response("이것은 JSON이 아닙니다.")
     )
