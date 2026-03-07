@@ -1,46 +1,90 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-type State = 'idle' | 'recording';
+type State = 'idle' | 'recording' | 'sending';
 
 export function Popup(): JSX.Element {
   const [state, setState] = useState<State>('idle');
-  const [status, setStatus] = useState('');
+  const [actionCount, setActionCount] = useState(0);
+  const [statusMsg, setStatusMsg] = useState('');
+
+  // 녹화 중 500ms 폴링으로 캡처된 액션 수 갱신
+  useEffect(() => {
+    if (state !== 'recording') return;
+    const timer = setInterval(() => {
+      chrome.storage.local.get(['capturedActions'], (result) => {
+        const actions =
+          (result as { capturedActions?: unknown[] })['capturedActions'] ?? [];
+        setActionCount(actions.length);
+      });
+    }, 500);
+    return () => clearInterval(timer);
+  }, [state]);
 
   function handleStart(): void {
-    chrome.runtime.sendMessage({ type: 'START_RECORDING' }, (res) => {
+    chrome.runtime.sendMessage({ type: 'START_RECORDING' }, (res: { ok: boolean }) => {
       if (res?.ok) {
+        setActionCount(0);
+        setStatusMsg('');
         setState('recording');
-        setStatus('녹화 중...');
       }
     });
   }
 
   function handleStop(): void {
-    chrome.runtime.sendMessage({ type: 'STOP_RECORDING' }, (res) => {
-      if (res?.ok) {
-        setState('idle');
-        setStatus(`${res.actions.length}개 액션 캡처됨`);
-        chrome.runtime.sendMessage({ type: 'SEND_TO_INTERPRETER' }, (r) => {
-          if (r?.ok) setStatus('인터프리터 전송 완료');
-          else setStatus(`전송 실패: ${r?.error ?? '알 수 없는 오류'}`);
-        });
+    setState('sending');
+    chrome.runtime.sendMessage(
+      { type: 'STOP_RECORDING' },
+      (_res: { ok: boolean; actions: unknown[] }) => {
+        chrome.runtime.sendMessage(
+          { type: 'SEND_TO_INTERPRETER' },
+          (r: { ok: boolean; error?: string }) => {
+            if (r?.ok) {
+              setStatusMsg('워크플로우 생성 완료');
+            } else {
+              setStatusMsg(`전송 실패: ${r?.error ?? '알 수 없는 오류'}`);
+            }
+            setState('idle');
+          }
+        );
       }
-    });
+    );
   }
 
   return (
-    <div style={{ padding: 16, width: 220, fontFamily: 'sans-serif' }}>
-      <h2 style={{ margin: '0 0 12px' }}>FlowCap</h2>
-      {state === 'idle' ? (
+    <div style={{ padding: 16, width: 240, fontFamily: 'sans-serif' }}>
+      <h2 style={{ margin: '0 0 12px', fontSize: 16 }}>FlowCap</h2>
+
+      {state === 'idle' && (
         <button onClick={handleStart} style={{ width: '100%', padding: 8 }}>
           녹화 시작
         </button>
-      ) : (
-        <button onClick={handleStop} style={{ width: '100%', padding: 8, background: '#e00' }}>
-          녹화 정지
+      )}
+
+      {state === 'recording' && (
+        <>
+          <button
+            onClick={handleStop}
+            style={{ width: '100%', padding: 8, background: '#cc0000', color: '#fff', border: 'none', cursor: 'pointer' }}
+          >
+            녹화 중지 &amp; 전송
+          </button>
+          <p style={{ marginTop: 8, fontSize: 12, color: '#555' }}>
+            녹화 중... {actionCount}개 캡처됨
+          </p>
+        </>
+      )}
+
+      {state === 'sending' && (
+        <button disabled style={{ width: '100%', padding: 8, opacity: 0.5 }}>
+          전송 중...
         </button>
       )}
-      {status && <p style={{ marginTop: 8, fontSize: 12, color: '#555' }}>{status}</p>}
+
+      {statusMsg && (
+        <p style={{ marginTop: 8, fontSize: 12, color: statusMsg.startsWith('전송 실패') ? '#c00' : '#080' }}>
+          {statusMsg}
+        </p>
+      )}
     </div>
   );
 }

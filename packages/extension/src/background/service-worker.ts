@@ -1,5 +1,8 @@
 import type { CapturedAction, InterpretRequest } from '@flowcap/shared';
 
+const INTERPRETER_URL: string =
+  (import.meta.env.VITE_INTERPRETER_URL as string | undefined) ?? 'http://localhost:8000';
+
 let isRecording = false;
 let capturedActions: CapturedAction[] = [];
 let sessionId = '';
@@ -10,6 +13,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       isRecording = true;
       capturedActions = [];
       sessionId = crypto.randomUUID();
+      chrome.storage.local.remove(['capturedActions']);
       sendResponse({ ok: true, sessionId });
       break;
 
@@ -22,20 +26,28 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       if (isRecording) {
         capturedActions.push(message.payload as CapturedAction);
         sendResponse({ ok: true });
+      } else {
+        sendResponse({ ok: false });
       }
       break;
 
     case 'SEND_TO_INTERPRETER': {
-      const interpreterUrl = 'http://localhost:8000';
-      const body: InterpretRequest = { sessionId, actions: capturedActions };
-      fetch(`${interpreterUrl}/api/interpret`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-        .then(res => res.json())
-        .then(data => sendResponse({ ok: true, data }))
-        .catch(err => sendResponse({ ok: false, error: String(err) }));
+      chrome.storage.local.get(['capturedActions'], (result) => {
+        const actions: CapturedAction[] =
+          (result as { capturedActions?: CapturedAction[] })['capturedActions'] ?? [];
+        const body: InterpretRequest = { sessionId, actions };
+        fetch(`${INTERPRETER_URL}/api/interpret`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        })
+          .then(res => res.json())
+          .then(data => {
+            chrome.storage.local.set({ lastWorkflow: data });
+            sendResponse({ ok: true, data });
+          })
+          .catch(err => sendResponse({ ok: false, error: String(err) }));
+      });
       return true; // async response
     }
   }

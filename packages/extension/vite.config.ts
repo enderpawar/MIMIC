@@ -1,11 +1,24 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
+import { copyFileSync } from 'fs';
+
+const copyManifest = {
+  name: 'copy-manifest',
+  closeBundle() {
+    copyFileSync(
+      resolve(__dirname, 'manifest.json'),
+      resolve(__dirname, 'dist/manifest.json')
+    );
+  },
+};
 
 export default defineConfig({
-  plugins: [react()],
+  root: resolve(__dirname, 'src'),
+  envDir: resolve(__dirname, '../..'),
+  plugins: [react(), copyManifest],
   build: {
-    outDir: 'dist',
+    outDir: resolve(__dirname, 'dist'),
     emptyOutDir: true,
     rollupOptions: {
       input: {

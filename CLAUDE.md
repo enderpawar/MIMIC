@@ -56,7 +56,7 @@ flowcap/
 |--------|------------|----------------|------|
 | extension | TypeScript | React 18, Vite, chrome MV3 | Chrome Web Store |
 | editor | TypeScript | React 18, Vite, @xyflow/react, Zustand | Render Static Site |
-| interpreter | Python 3.11 | FastAPI, anthropic SDK, pydantic v2 | Render Web Service |
+| interpreter | Python 3.11 | FastAPI, google-generativeai, pydantic v2 | Render Web Service |
 | runner | TypeScript/Node.js | Fastify, Playwright, BullMQ, socket.io | Render Web Service (Docker) |
 | shared | TypeScript | zod | npm workspace |
 
@@ -282,7 +282,7 @@ function isExcluded(element: Element): boolean {
 
 ### 5-2. interpreter
 
-**역할:** ActionLog → Claude API → Workflow JSON 반환
+**역할:** ActionLog → Gemini API → Workflow JSON 반환
 
 ```
 packages/interpreter/
@@ -290,23 +290,26 @@ packages/interpreter/
 ├── routers/
 │   └── interpret.py         # POST /api/interpret
 ├── services/
-│   └── interpret_service.py # Claude API 호출 + 파싱 로직
+│   └── interpret_service.py # Gemini API 호출 + 파싱 로직
 ├── models/
 │   └── schemas.py           # Pydantic 입출력 모델
 ├── prompts/
-│   └── interpret.txt        # Claude 프롬프트 템플릿
+│   └── interpret.txt        # Gemini 프롬프트 템플릿
 ├── requirements.txt
 └── Dockerfile
 ```
 
 **interpret_service.py 핵심 로직:**
 ```python
-import anthropic
+import google.generativeai as genai
 import json
+import os
 
-client = anthropic.Anthropic()
+genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 
-SYSTEM_PROMPT = """
+model = genai.GenerativeModel(
+    model_name="gemini-3.1-pro-preview",
+    system_instruction="""
 당신은 브라우저 자동화 전문가입니다.
 사용자의 브라우저 인터랙션 로그를 분석하여
 워크플로우 노드 그래프 JSON을 생성합니다.
@@ -317,19 +320,18 @@ SYSTEM_PROMPT = """
 3. selector는 가장 안정적인 CSS selector를 사용하세요.
 4. 연속된 동일 도메인 네비게이션은 하나의 navigate 노드로 합치세요.
 """
+)
 
 async def interpret(actions: list[dict]) -> dict:
-    response = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=4096,
-        system=SYSTEM_PROMPT,
-        messages=[{
-            "role": "user",
-            "content": f"다음 액션 로그를 워크플로우로 변환하세요:\n{json.dumps(actions, ensure_ascii=False)}"
-        }]
-    )
-    raw = response.content[0].text
-    return json.loads(raw)
+    prompt = f"다음 액션 로그를 워크플로우로 변환하세요:\n{json.dumps(actions, ensure_ascii=False)}"
+    response = model.generate_content(prompt)
+    raw = response.text.strip()
+    # Gemini가 ```json 블록으로 감쌀 경우 제거
+    if raw.startswith("```"):
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+    return json.loads(raw.strip())
 ```
 
 **환경변수 관리 (pydantic-settings):**
@@ -338,7 +340,7 @@ async def interpret(actions: list[dict]) -> dict:
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    anthropic_api_key: str
+    gemini_api_key: str
     redis_url: str = "redis://localhost:6379"
     database_url: str = ""
     cors_origins: list[str] = ["http://localhost:5173"]
@@ -539,8 +541,8 @@ export class WorkflowExecutor {
 
 **로컬 개발용 `.env` (루트에 위치, 절대 git commit 금지)**
 ```bash
-# Anthropic
-ANTHROPIC_API_KEY=sk-ant-xxxxx
+# Gemini (Google AI Studio에서 발급)
+GEMINI_API_KEY=AIzaSyxxxxx
 
 # Database (Render에서 복사)
 DATABASE_URL=postgresql://flowcap:password@host/flowcap
@@ -608,7 +610,7 @@ pnpm dev                        # port 5173
 **배포 시 각 서비스 환경변수:**
 ```
 # interpreter + runner 공통
-ANTHROPIC_API_KEY   = (Anthropic 콘솔에서 발급)
+GEMINI_API_KEY      = (Google AI Studio에서 발급)
 REDIS_URL           = (Upstash 대시보드에서 복사)
 DATABASE_URL        = (Render PostgreSQL Internal URL)
 
@@ -664,7 +666,7 @@ docs: 문서 수정
 예시:
 feat(extension): 클릭 이벤트 캡처 로직 구현
 fix(runner): Playwright 타임아웃 재시도 처리 추가
-feat(interpreter): Claude API 노드 변환 서비스 구현
+feat(interpreter): Gemini API 노드 변환 서비스 구현
 ```
 
 패키지명: `extension` | `editor` | `interpreter` | `runner` | `shared`
@@ -690,9 +692,10 @@ Phase 2 — 캡처 (1주)
 
 Phase 3 — AI 해석 (1주)
   [ ] interpreter FastAPI 기본 구조 + /health 엔드포인트
-  [ ] Claude API 연동 + 프롬프트 작성
+  [ ] Gemini API 연동 + 프롬프트 작성 (gemini-3.1-pro-preview)
   [ ] InterpretRequest → Workflow JSON 변환
   [ ] /api/interpret 엔드포인트 단위 테스트
+  
 
 Phase 4 — 에디터 (1주)
   [ ] React Flow 캔버스 기본 세팅
