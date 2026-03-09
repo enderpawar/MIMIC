@@ -1,5 +1,3 @@
-import json
-
 from fastapi import APIRouter, HTTPException
 
 from models.schemas import InterpretRequest, InterpretResponse, Workflow
@@ -16,9 +14,5 @@ async def interpret_route(body: InterpretRequest) -> InterpretResponse:
         workflow = Workflow(**result)
         warnings: list[str] = result.get("warnings", [])
         return InterpretResponse(workflow=workflow, confidence=0.9, warnings=warnings)
-    except json.JSONDecodeError as exc:
-        raise HTTPException(
-            status_code=500, detail=f"Gemini 응답 JSON 파싱 실패: {exc}"
-        ) from exc
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc

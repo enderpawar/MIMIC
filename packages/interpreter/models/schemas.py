@@ -12,7 +12,7 @@ class CapturedAction(BaseModel):
 
 
 class InterpretRequest(BaseModel):
-    sessionId: str
+    sessionId: str = Field(min_length=1)
     actions: list[CapturedAction] = Field(min_length=1)
 
 
