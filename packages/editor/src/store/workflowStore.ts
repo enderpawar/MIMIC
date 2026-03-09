@@ -7,12 +7,14 @@ interface WorkflowState {
   edges: WorkflowEdge[];
   runLog: RunEvent[];
   isRunning: boolean;
+  selectedNodeId: string | null;
   setWorkflow: (nodes: WorkflowNode[], edges: WorkflowEdge[]) => void;
   addNode: (node: WorkflowNode) => void;
   updateNode: (id: string, updates: Partial<WorkflowNode>) => void;
   deleteNode: (id: string) => void;
   addRunEvent: (event: RunEvent) => void;
   setRunning: (running: boolean) => void;
+  setSelectedNodeId: (id: string | null) => void;
 }
 
 export const useWorkflowStore = create<WorkflowState>()(
@@ -21,6 +23,7 @@ export const useWorkflowStore = create<WorkflowState>()(
     edges: [],
     runLog: [],
     isRunning: false,
+    selectedNodeId: null,
     setWorkflow: (nodes, edges) => set(state => {
       state.nodes = nodes;
       state.edges = edges;
@@ -38,5 +41,6 @@ export const useWorkflowStore = create<WorkflowState>()(
     }),
     addRunEvent: (event) => set(state => { state.runLog.push(event); }),
     setRunning: (running) => set(state => { state.isRunning = running; }),
+    setSelectedNodeId: (id) => set(state => { state.selectedNodeId = id; }),
   }))
 );
