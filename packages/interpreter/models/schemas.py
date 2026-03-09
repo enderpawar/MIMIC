@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class CapturedAction(BaseModel):
@@ -12,8 +12,8 @@ class CapturedAction(BaseModel):
 
 
 class InterpretRequest(BaseModel):
-    sessionId: str
-    actions: list[CapturedAction]
+    sessionId: str = Field(min_length=1)
+    actions: list[CapturedAction] = Field(min_length=1)
 
 
 class WorkflowNode(BaseModel):
