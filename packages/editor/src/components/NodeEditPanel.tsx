@@ -10,13 +10,15 @@ export function NodeEditPanel(): JSX.Element {
   const [selector, setSelector] = useState('');
   const [value, setValue] = useState('');
 
-  // 패널 열릴 때 현재 값으로 초기화
+  // 패널 열릴 때 현재 값으로 초기화 — [fix] node?.id 대신 selectedNodeId 사용
   useEffect(() => {
     if (!node) return;
     setLabel(node.label);
     setSelector(getSelector(node));
     setValue(getValue(node));
-  }, [node?.id]);
+    // node는 selectedNodeId로부터 파생되므로 selectedNodeId만 의존
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedNodeId]);
 
   const isOpen = selectedNodeId !== null;
 

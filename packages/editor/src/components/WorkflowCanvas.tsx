@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -70,8 +70,9 @@ function CanvasInner(): JSX.Element {
   const { nodes, edges, setWorkflow, setSelectedNodeId, addNode } = useWorkflowStore();
   const { screenToFlowPosition } = useReactFlow();
 
-  const flowNodes = toFlowNodes(nodes);
-  const flowEdges = toFlowEdges(edges);
+  // [fix] 매 렌더 재계산 방지 — useMemo로 안정 참조 유지
+  const flowNodes = useMemo(() => toFlowNodes(nodes), [nodes]);
+  const flowEdges = useMemo(() => toFlowEdges(edges), [edges]);
 
   const onNodesChange: OnNodesChange = useCallback(
     (changes) => {
@@ -101,14 +102,25 @@ function CanvasInner(): JSX.Element {
 
   const onConnect = useCallback(
     (connection: Connection) => {
+      // [fix] null 가드 — Connection 타입은 string | null
+      if (!connection.source || !connection.target) return;
+
+      const edgeLabel =
+        connection.sourceHandle === 'true' || connection.sourceHandle === 'false'
+          ? connection.sourceHandle
+          : undefined;
+
+      // [fix] 중복 엣지 방지 — 같은 source+target+label 조합이 이미 존재하면 무시
+      const isDuplicate = edges.some(
+        (e) => e.source === connection.source && e.target === connection.target && e.label === edgeLabel,
+      );
+      if (isDuplicate) return;
+
       const newEdge: WorkflowEdge = {
         id: `e-${connection.source}-${connection.sourceHandle ?? ''}-${connection.target}`,
         source: connection.source,
         target: connection.target,
-        label:
-          connection.sourceHandle === 'true' || connection.sourceHandle === 'false'
-            ? connection.sourceHandle
-            : undefined,
+        label: edgeLabel,
       };
       setWorkflow(nodes, [...edges, newEdge]);
     },
@@ -144,6 +156,7 @@ function CanvasInner(): JSX.Element {
       onDragOver={onDragOver}
       onDrop={onDrop}
     >
+      {/* [fix] fitView 제거 — 매 렌더마다 뷰포트 리셋 방지. 초기 줌만 defaultViewport로 설정 */}
       <ReactFlow
         nodeTypes={NODE_TYPES}
         nodes={flowNodes}
@@ -153,7 +166,7 @@ function CanvasInner(): JSX.Element {
         onConnect={onConnect}
         onNodeClick={onNodeClick}
         onPaneClick={() => setSelectedNodeId(null)}
-        fitView
+        defaultViewport={{ x: 100, y: 80, zoom: 0.85 }}
       >
         <Background />
         <Controls />
