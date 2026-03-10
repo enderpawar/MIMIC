@@ -8,6 +8,8 @@ interface WorkflowState {
   runLog: RunEvent[];
   isRunning: boolean;
   selectedNodeId: string | null;
+  nodeRunStatus: Record<string, 'running' | 'success' | 'failed'>;
+  runError: string | null;
   setWorkflow: (nodes: WorkflowNode[], edges: WorkflowEdge[]) => void;
   addNode: (node: WorkflowNode) => void;
   updateNode: (id: string, updates: Partial<WorkflowNode>) => void;
@@ -15,6 +17,8 @@ interface WorkflowState {
   addRunEvent: (event: RunEvent) => void;
   setRunning: (running: boolean) => void;
   setSelectedNodeId: (id: string | null) => void;
+  clearRunStatus: () => void;
+  setRunError: (message: string) => void;
 }
 
 export const useWorkflowStore = create<WorkflowState>()(
@@ -24,6 +28,8 @@ export const useWorkflowStore = create<WorkflowState>()(
     runLog: [],
     isRunning: false,
     selectedNodeId: null,
+    nodeRunStatus: {},
+    runError: null,
     setWorkflow: (nodes, edges) => set(state => {
       state.nodes = nodes;
       state.edges = edges;
@@ -39,8 +45,19 @@ export const useWorkflowStore = create<WorkflowState>()(
         e => e.source !== id && e.target !== id
       );
     }),
-    addRunEvent: (event) => set(state => { state.runLog.push(event); }),
+    addRunEvent: (event) => set(state => {
+      state.runLog.push(event);
+      if (event.status !== 'skipped') {
+        state.nodeRunStatus[event.nodeId] = event.status;
+      }
+    }),
     setRunning: (running) => set(state => { state.isRunning = running; }),
     setSelectedNodeId: (id) => set(state => { state.selectedNodeId = id; }),
+    clearRunStatus: () => set(state => {
+      state.nodeRunStatus = {};
+      state.runError = null;
+      state.runLog = [];
+    }),
+    setRunError: (message) => set(state => { state.runError = message; }),
   }))
 );

@@ -28,13 +28,25 @@ const NODE_TYPES = {
   condition: ConditionNodeCard,
 } as const;
 
-function toFlowNodes(nodes: WorkflowNode[]): Node[] {
-  return nodes.map((n) => ({
-    id: n.id,
-    type: n.type,
-    position: n.position,
-    data: n as unknown as Record<string, unknown>,
-  }));
+function toFlowNodes(
+  nodes: WorkflowNode[],
+  nodeRunStatus: Record<string, 'running' | 'success' | 'failed'>,
+): Node[] {
+  return nodes.map((n) => {
+    const status = nodeRunStatus[n.id];
+    const outline =
+      status === 'running' ? '2px dashed #3b82f6' :
+      status === 'success' ? '2px solid #22c55e' :
+      status === 'failed'  ? '2px solid #ef4444' :
+      undefined;
+    return {
+      id: n.id,
+      type: n.type,
+      position: n.position,
+      data: n as unknown as Record<string, unknown>,
+      style: outline ? { outline, borderRadius: 8 } : undefined,
+    };
+  });
 }
 
 function toFlowEdges(edges: WorkflowEdge[]): Edge[] {
@@ -67,16 +79,22 @@ function createDefaultNode(
 
 // useReactFlow()를 사용하기 위해 ReactFlow를 렌더링하는 내부 컴포넌트 분리
 function CanvasInner(): JSX.Element {
-  const { nodes, edges, setWorkflow, setSelectedNodeId, addNode } = useWorkflowStore();
+  const { nodes, edges, nodeRunStatus, setWorkflow, setSelectedNodeId, addNode } = useWorkflowStore();
   const { screenToFlowPosition } = useReactFlow();
 
   // [fix] 매 렌더 재계산 방지 — useMemo로 안정 참조 유지
-  const flowNodes = useMemo(() => toFlowNodes(nodes), [nodes]);
+  const flowNodes = useMemo(() => toFlowNodes(nodes, nodeRunStatus), [nodes, nodeRunStatus]);
   const flowEdges = useMemo(() => toFlowEdges(edges), [edges]);
 
   const onNodesChange: OnNodesChange = useCallback(
     (changes) => {
-      const updated = applyNodeChanges(changes, flowNodes);
+      // 'position' 변경만 스토어에 반영 — 'dimensions'/'internals'/'select' 변경은
+      // setWorkflow 호출 시 새 배열 참조가 생성돼 React Flow가 updateNodeInternals를
+      // 재실행하는 무한 루프를 유발하므로 무시
+      const positionChanges = changes.filter((c) => c.type === 'position');
+      if (positionChanges.length === 0) return;
+
+      const updated = applyNodeChanges(positionChanges, flowNodes);
       const merged = nodes.map((n) => {
         const found = updated.find((u) => u.id === n.id);
         return found ? { ...n, position: found.position } : n;
@@ -97,7 +115,7 @@ function CanvasInner(): JSX.Element {
       }));
       setWorkflow(nodes, merged);
     },
-    [nodes, edges, flowEdges, setWorkflow],
+    [nodes, flowEdges, setWorkflow],
   );
 
   const onConnect = useCallback(
@@ -151,12 +169,9 @@ function CanvasInner(): JSX.Element {
   );
 
   return (
-    <div
-      style={{ width: '100%', height: '100%' }}
-      onDragOver={onDragOver}
-      onDrop={onDrop}
-    >
+    <div style={{ width: '100%', height: '100%' }}>
       {/* [fix] fitView 제거 — 매 렌더마다 뷰포트 리셋 방지. 초기 줌만 defaultViewport로 설정 */}
+      {/* [fix] onDragOver/onDrop을 ReactFlow 컴포넌트에 직접 붙임 — wrapper div에 붙이면 React Flow 내부가 이벤트를 소비해 drop이 도달 안 할 수 있음 */}
       <ReactFlow
         nodeTypes={NODE_TYPES}
         nodes={flowNodes}
@@ -166,6 +181,8 @@ function CanvasInner(): JSX.Element {
         onConnect={onConnect}
         onNodeClick={onNodeClick}
         onPaneClick={() => setSelectedNodeId(null)}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
         defaultViewport={{ x: 100, y: 80, zoom: 0.85 }}
       >
         <Background />

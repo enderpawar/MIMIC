@@ -1,5 +1,7 @@
 import { chromium, Browser, Page } from 'playwright';
 import type { Workflow, WorkflowNode, RunEvent } from '@flowcap/shared';
+import { executeAction } from './nodes/ActionExecutor';
+import { executeWait } from './nodes/WaitExecutor';
 
 export class WorkflowExecutor {
   private browser: Browser | null = null;
@@ -25,17 +27,25 @@ export class WorkflowExecutor {
           timestamp: Date.now(),
         });
 
-        await this.executeNode(node);
-
-        onEvent({
-          runId: workflow.id,
-          nodeId: node.id,
-          status: 'success',
-          timestamp: Date.now(),
-        });
+        try {
+          await this.executeNode(node);
+          onEvent({
+            runId: workflow.id,
+            nodeId: node.id,
+            status: 'success',
+            timestamp: Date.now(),
+          });
+        } catch (error) {
+          onEvent({
+            runId: workflow.id,
+            nodeId: node.id,
+            status: 'failed',
+            message: error instanceof Error ? error.message : 'Unknown error',
+            timestamp: Date.now(),
+          });
+          // 실패해도 다음 노드 계속 실행
+        }
       }
-    } catch (error) {
-      // 에러 발생해도 반드시 브라우저 정리
     } finally {
       await this.browser?.close();
     }
@@ -43,40 +53,7 @@ export class WorkflowExecutor {
 
   private async executeNode(node: WorkflowNode): Promise<void> {
     if (!this.page) throw new Error('Page not initialized');
-
-    if (node.type === 'action') {
-      const { kind, selector, value } = node.action;
-      switch (kind) {
-        case 'click':
-          await this.page.click(selector, { timeout: 10000 });
-          break;
-        case 'input':
-          await this.page.fill(selector, value ?? '');
-          break;
-        case 'navigate':
-          await this.page.goto(value ?? '', { waitUntil: 'domcontentloaded' });
-          break;
-        case 'scroll':
-          await this.page.evaluate(
-            `document.querySelector('${selector}')?.scrollIntoView()`
-          );
-          break;
-      }
-    }
-
-    if (node.type === 'wait') {
-      const { kind, selector, ms, timeout } = node.wait;
-      switch (kind) {
-        case 'element':
-          await this.page.waitForSelector(selector!, { timeout: timeout ?? 30000 });
-          break;
-        case 'duration':
-          await this.page.waitForTimeout(ms ?? 1000);
-          break;
-        case 'network_idle':
-          await this.page.waitForLoadState('networkidle');
-          break;
-      }
-    }
+    if (node.type === 'action') await executeAction(this.page, node);
+    if (node.type === 'wait') await executeWait(this.page, node);
   }
 }
