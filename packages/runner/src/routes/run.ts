@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import type { Server } from 'socket.io';
 import type { RunRequest } from '@flowcap/shared';
 import { WorkflowExecutor } from '../executor/WorkflowExecutor';
-import { emitRunEvent, emitRunDone, emitRunError } from '../socket/runSocket';
+import { emitRunEvent, emitRunDone, emitRunError, registerPendingRun } from '../socket/runSocket';
 
 export async function runRoutes(fastify: FastifyInstance, io: Server): Promise<void> {
   fastify.post<{ Body: RunRequest }>('/api/run', async (request, reply) => {
@@ -10,8 +10,8 @@ export async function runRoutes(fastify: FastifyInstance, io: Server): Promise<v
     const runId = crypto.randomUUID();
     const executor = new WorkflowExecutor();
 
-    // 300ms 대기: 클라이언트가 socket room에 join할 시간을 확보
-    setTimeout(() => {
+    // 클라이언트가 joinRoom 이벤트를 보내는 즉시 실행 시작 — 고정 대기 제거
+    registerPendingRun(runId, () => {
       executor
         .execute({ ...workflow, id: runId }, (event) => emitRunEvent(io, runId, event))
         .then(() => emitRunDone(io, runId))
@@ -19,7 +19,7 @@ export async function runRoutes(fastify: FastifyInstance, io: Server): Promise<v
           fastify.log.error({ err }, 'workflow execution failed');
           emitRunError(io, runId, err instanceof Error ? err.message : 'Unknown error');
         });
-    }, 300);
+    });
 
     return reply.status(202).send({ runId });
   });

@@ -115,7 +115,7 @@ function CanvasInner(): JSX.Element {
       }));
       setWorkflow(nodes, merged);
     },
-    [nodes, edges, flowEdges, setWorkflow],
+    [nodes, flowEdges, setWorkflow],
   );
 
   const onConnect = useCallback(

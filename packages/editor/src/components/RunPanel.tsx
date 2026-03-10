@@ -79,12 +79,12 @@ export function RunPanel(): JSX.Element {
           maxHeight: 140,
           overflowY: 'auto',
         }}>
-          {runLog.map((e, i) => {
+          {runLog.map((e) => {
             const nodeLabel = nodes.find((n) => n.id === e.nodeId)?.label ?? e.nodeId;
             const time = new Date(e.timestamp).toLocaleTimeString();
             const color = STATUS_COLOR[e.status] ?? '#6b7280';
             return (
-              <li key={i} style={{ padding: '2px 0', color: '#374151' }}>
+              <li key={`${e.nodeId}-${e.timestamp}`} style={{ padding: '2px 0', color: '#374151' }}>
                 <span style={{ color: '#9ca3af' }}>[{time}]</span>{' '}
                 <span style={{ fontWeight: 500 }}>{nodeLabel}</span>{' '}
                 <span style={{ color }}>— {e.status}</span>

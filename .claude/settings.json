@@ -7,7 +7,9 @@
       "Bash(/c/Users/jinwoo/AppData/Roaming/npm/pnpm --filter @flowcap/shared build)",
       "Bash(docker build -t mimic-runner -f packages/runner/Dockerfile .)",
       "Bash(powershell -Command \"docker build -t mimic-runner -f packages/runner/Dockerfile . 2>&1\")",
-      "Bash(/c/Users/jinwoo/AppData/Roaming/npm/pnpm --filter @flowcap/extension build)"
+      "Bash(/c/Users/jinwoo/AppData/Roaming/npm/pnpm --filter @flowcap/extension build)",
+      "Bash(git -C /c/Users/jinwoo/Desktop/PROJECT/Project_MIMIC ls-files --error-unmatch .cursor/debug-251b63.log)",
+      "Bash(git -C /c/Users/jinwoo/Desktop/PROJECT/Project_MIMIC rm --cached .cursor/debug-251b63.log)"
     ]
   }
 }

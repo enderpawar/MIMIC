@@ -31,14 +31,28 @@ export async function startRun(workflow: Workflow): Promise<void> {
     useWorkflowStore.getState();
   clearRunStatus();
 
+  // 중복 호출 시 이전 소켓 정리
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
+
   socket = await connectWithRetry();
 
-  const res = await fetch(`${RUNNER_URL}/api/run`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ workflowId: workflow.id, workflow }),
-  });
-  if (!res.ok) throw new Error(`Runner 오류: ${res.status}`);
+  let res: Response;
+  try {
+    res = await fetch(`${RUNNER_URL}/api/run`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ workflowId: workflow.id, workflow }),
+    });
+    if (!res.ok) throw new Error(`Runner 오류: ${res.status}`);
+  } catch (err) {
+    // fetch 실패 시 소켓 정리 후 에러 전파
+    socket.disconnect();
+    socket = null;
+    throw err;
+  }
 
   const { runId } = (await res.json()) as { runId: string };
   socket.emit('joinRoom', runId);

@@ -14,8 +14,10 @@ export async function executeAction(page: Page, node: ActionNode): Promise<void>
       await page.goto(value ?? '', { waitUntil: 'domcontentloaded' });
       break;
     case 'scroll':
+      // selector를 인자로 분리해 코드 인젝션 방지
       await page.evaluate(
-        `document.querySelector('${selector}')?.scrollIntoView()`
+        (sel) => document.querySelector(sel)?.scrollIntoView(),
+        selector,
       );
       break;
   }
