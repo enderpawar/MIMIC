@@ -2,6 +2,15 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import type { WorkflowNode, WorkflowEdge, RunEvent } from '@flowcap/shared';
 
+interface PickerPos {
+  screen: { x: number; y: number };
+}
+
+export interface PlaceholderNode {
+  id: string;
+  position: { x: number; y: number };
+}
+
 interface WorkflowState {
   nodes: WorkflowNode[];
   edges: WorkflowEdge[];
@@ -10,6 +19,10 @@ interface WorkflowState {
   selectedNodeId: string | null;
   nodeRunStatus: Record<string, 'running' | 'success' | 'failed'>;
   runError: string | null;
+  /** 팝업 화면 좌표 */
+  pickerPos: PickerPos | null;
+  /** 플레이스홀더 노드 (더블클릭 시 생성, 타입 선택 후 제거) */
+  placeholderNode: PlaceholderNode | null;
   setWorkflow: (nodes: WorkflowNode[], edges: WorkflowEdge[]) => void;
   addNode: (node: WorkflowNode) => void;
   updateNode: (id: string, updates: Partial<WorkflowNode>) => void;
@@ -19,6 +32,11 @@ interface WorkflowState {
   setSelectedNodeId: (id: string | null) => void;
   clearRunStatus: () => void;
   setRunError: (message: string) => void;
+  /** 더블클릭: 플레이스홀더 생성 + 피커 열기 */
+  openNodePicker: (screen: { x: number; y: number }, placeholder: PlaceholderNode) => void;
+  /** 플레이스홀더 노드 클릭: 피커만 열기 (이미 존재하는 플레이스홀더) */
+  reopenNodePicker: (screen: { x: number; y: number }) => void;
+  closeNodePicker: () => void;
 }
 
 export const useWorkflowStore = create<WorkflowState>()(
@@ -30,6 +48,8 @@ export const useWorkflowStore = create<WorkflowState>()(
     selectedNodeId: null,
     nodeRunStatus: {},
     runError: null,
+    pickerPos: null,
+    placeholderNode: null,
     setWorkflow: (nodes, edges) => set(state => {
       state.nodes = nodes;
       state.edges = edges;
@@ -59,5 +79,16 @@ export const useWorkflowStore = create<WorkflowState>()(
       state.runLog = [];
     }),
     setRunError: (message) => set(state => { state.runError = message; }),
+    openNodePicker: (screen, placeholder) => set(state => {
+      state.pickerPos = { screen };
+      state.placeholderNode = placeholder;
+    }),
+    reopenNodePicker: (screen) => set(state => {
+      state.pickerPos = { screen };
+    }),
+    closeNodePicker: () => set(state => {
+      state.pickerPos = null;
+      state.placeholderNode = null;
+    }),
   }))
 );
