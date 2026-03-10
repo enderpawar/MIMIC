@@ -35,7 +35,12 @@ export function ImportPanel(): JSX.Element {
         actions,
       });
 
-      setWorkflow(res.workflow.nodes, res.workflow.edges);
+      // Interpreter는 position을 생성하지 않으므로 없으면 세로 방향으로 자동 배치
+      const nodesWithPositions = res.workflow.nodes.map((node, i) => ({
+        ...node,
+        position: node.position ?? { x: 200, y: 80 + i * 140 },
+      }));
+      setWorkflow(nodesWithPositions, res.workflow.edges);
       setConfidence(res.confidence);
       setWarnings(res.warnings ?? []);
       setStatus('success');

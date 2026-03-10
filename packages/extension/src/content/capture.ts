@@ -27,15 +27,17 @@ let actionIndex = 0;
 const sessionActions: CapturedAction[] = [];
 let isRecording = false;
 
-// 페이지 재로드 후 연속성: 기존 저장 액션 로드 및 인덱스 복원
-chrome.storage.local.get(['capturedActions'], (result) => {
-  const existing: CapturedAction[] =
-    (result as { capturedActions?: CapturedAction[] })['capturedActions'] ?? [];
+// 페이지 재로드/SPA 이동 후 연속성: 기존 저장 액션 + 녹화 상태 복원
+// isRecording을 storage에서 복원하지 않으면 페이지 이동 시 content script 재로드 후 녹화가 중단됨
+chrome.storage.local.get(['capturedActions', 'isRecording'], (result) => {
+  const res = result as { capturedActions?: CapturedAction[]; isRecording?: boolean };
+  const existing: CapturedAction[] = res['capturedActions'] ?? [];
   existing.forEach(a => sessionActions.push(a));
   actionIndex = sessionActions.length;
+  isRecording = res['isRecording'] ?? false;
 });
 
-// 녹화 상태 동기화
+// 녹화 상태 동기화 (service worker 메시지 수신 시 storage와 동기화)
 chrome.runtime.onMessage.addListener((message: { type: string }) => {
   if (message.type === 'START_RECORDING') isRecording = true;
   if (message.type === 'STOP_RECORDING') isRecording = false;

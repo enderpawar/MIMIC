@@ -13,22 +13,29 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       isRecording = true;
       capturedActions = [];
       sessionId = crypto.randomUUID();
-      chrome.storage.local.remove(['capturedActions']);
+      // isRecording을 storage에 영속 — 페이지 이동 시 content script 재로드 후 복원에 사용
+      chrome.storage.local.remove(['capturedActions', 'isRecording'], () => {
+        chrome.storage.local.set({ isRecording: true });
+      });
       sendResponse({ ok: true, sessionId });
       break;
 
     case 'STOP_RECORDING':
       isRecording = false;
+      chrome.storage.local.set({ isRecording: false });
       sendResponse({ ok: true, actions: capturedActions });
       break;
 
     case 'CAPTURE_ACTION':
-      if (isRecording) {
-        capturedActions.push(message.payload as CapturedAction);
-        sendResponse({ ok: true });
-      } else {
-        sendResponse({ ok: false });
-      }
+      // Service worker 재시작 시 in-memory isRecording이 초기화되므로 storage로 확인
+      chrome.storage.local.get(['isRecording'], (result) => {
+        const recording = isRecording || !!(result as { isRecording?: boolean })['isRecording'];
+        if (recording) {
+          isRecording = true; // 메모리 동기화
+          capturedActions.push(message.payload as CapturedAction);
+        }
+        sendResponse({ ok: recording });
+      });
       break;
 
     case 'SEND_TO_INTERPRETER': {

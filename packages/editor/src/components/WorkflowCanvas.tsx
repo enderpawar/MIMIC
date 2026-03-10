@@ -88,7 +88,13 @@ function CanvasInner(): JSX.Element {
 
   const onNodesChange: OnNodesChange = useCallback(
     (changes) => {
-      const updated = applyNodeChanges(changes, flowNodes);
+      // 'position' 변경만 스토어에 반영 — 'dimensions'/'internals'/'select' 변경은
+      // setWorkflow 호출 시 새 배열 참조가 생성돼 React Flow가 updateNodeInternals를
+      // 재실행하는 무한 루프를 유발하므로 무시
+      const positionChanges = changes.filter((c) => c.type === 'position');
+      if (positionChanges.length === 0) return;
+
+      const updated = applyNodeChanges(positionChanges, flowNodes);
       const merged = nodes.map((n) => {
         const found = updated.find((u) => u.id === n.id);
         return found ? { ...n, position: found.position } : n;
@@ -163,12 +169,9 @@ function CanvasInner(): JSX.Element {
   );
 
   return (
-    <div
-      style={{ width: '100%', height: '100%' }}
-      onDragOver={onDragOver}
-      onDrop={onDrop}
-    >
+    <div style={{ width: '100%', height: '100%' }}>
       {/* [fix] fitView 제거 — 매 렌더마다 뷰포트 리셋 방지. 초기 줌만 defaultViewport로 설정 */}
+      {/* [fix] onDragOver/onDrop을 ReactFlow 컴포넌트에 직접 붙임 — wrapper div에 붙이면 React Flow 내부가 이벤트를 소비해 drop이 도달 안 할 수 있음 */}
       <ReactFlow
         nodeTypes={NODE_TYPES}
         nodes={flowNodes}
@@ -178,6 +181,8 @@ function CanvasInner(): JSX.Element {
         onConnect={onConnect}
         onNodeClick={onNodeClick}
         onPaneClick={() => setSelectedNodeId(null)}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
         defaultViewport={{ x: 100, y: 80, zoom: 0.85 }}
       >
         <Background />

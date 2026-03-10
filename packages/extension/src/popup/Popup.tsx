@@ -7,6 +7,17 @@ export function Popup(): JSX.Element {
   const [actionCount, setActionCount] = useState(0);
   const [statusMsg, setStatusMsg] = useState('');
 
+  // 팝업이 닫혔다 다시 열려도 녹화 상태 복원 — chrome state는 React state와 무관하게 유지됨
+  useEffect(() => {
+    chrome.storage.local.get(['isRecording', 'capturedActions'], (result) => {
+      const res = result as { isRecording?: boolean; capturedActions?: unknown[] };
+      if (res['isRecording']) {
+        setState('recording');
+        setActionCount(res['capturedActions']?.length ?? 0);
+      }
+    });
+  }, []);
+
   // 녹화 중 500ms 폴링으로 캡처된 액션 수 갱신
   useEffect(() => {
     if (state !== 'recording') return;
