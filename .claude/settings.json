@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(echo \"EXIT:$?\")"
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(ls -la /c/Users/jinwoo/Desktop/PROJECT/Project_MIMIC/*.yaml /c/Users/jinwoo/Desktop/PROJECT/Project_MIMIC/*.yml)",
+      "Bash(ls -la /c/Users/jinwoo/Desktop/PROJECT/Project_MIMIC/pnpm*)",
+      "Bash(/c/Users/jinwoo/AppData/Roaming/npm/pnpm --filter @flowcap/shared build)",
+      "Bash(docker build -t mimic-runner -f packages/runner/Dockerfile .)",
+      "Bash(powershell -Command \"docker build -t mimic-runner -f packages/runner/Dockerfile . 2>&1\")"
     ]
   }
 }

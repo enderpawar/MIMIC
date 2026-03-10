@@ -1,6 +1,7 @@
 import Fastify from 'fastify';
 import { Server } from 'socket.io';
 import { runRoutes } from './routes/run';
+import { setupRunSocket } from './socket/runSocket';
 
 const PORT = Number(process.env.PORT ?? 3001);
 
@@ -10,6 +11,7 @@ const fastify = Fastify({ logger: true });
 const io = new Server(fastify.server, {
   cors: { origin: '*' },
 });
+setupRunSocket(io);
 
 fastify.get('/health', async () => ({ status: 'ok' }));
 

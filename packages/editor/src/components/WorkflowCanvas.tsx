@@ -28,13 +28,25 @@ const NODE_TYPES = {
   condition: ConditionNodeCard,
 } as const;
 
-function toFlowNodes(nodes: WorkflowNode[]): Node[] {
-  return nodes.map((n) => ({
-    id: n.id,
-    type: n.type,
-    position: n.position,
-    data: n as unknown as Record<string, unknown>,
-  }));
+function toFlowNodes(
+  nodes: WorkflowNode[],
+  nodeRunStatus: Record<string, 'running' | 'success' | 'failed'>,
+): Node[] {
+  return nodes.map((n) => {
+    const status = nodeRunStatus[n.id];
+    const outline =
+      status === 'running' ? '2px dashed #3b82f6' :
+      status === 'success' ? '2px solid #22c55e' :
+      status === 'failed'  ? '2px solid #ef4444' :
+      undefined;
+    return {
+      id: n.id,
+      type: n.type,
+      position: n.position,
+      data: n as unknown as Record<string, unknown>,
+      style: outline ? { outline, borderRadius: 8 } : undefined,
+    };
+  });
 }
 
 function toFlowEdges(edges: WorkflowEdge[]): Edge[] {
@@ -67,11 +79,11 @@ function createDefaultNode(
 
 // useReactFlow()를 사용하기 위해 ReactFlow를 렌더링하는 내부 컴포넌트 분리
 function CanvasInner(): JSX.Element {
-  const { nodes, edges, setWorkflow, setSelectedNodeId, addNode } = useWorkflowStore();
+  const { nodes, edges, nodeRunStatus, setWorkflow, setSelectedNodeId, addNode } = useWorkflowStore();
   const { screenToFlowPosition } = useReactFlow();
 
   // [fix] 매 렌더 재계산 방지 — useMemo로 안정 참조 유지
-  const flowNodes = useMemo(() => toFlowNodes(nodes), [nodes]);
+  const flowNodes = useMemo(() => toFlowNodes(nodes, nodeRunStatus), [nodes, nodeRunStatus]);
   const flowEdges = useMemo(() => toFlowEdges(edges), [edges]);
 
   const onNodesChange: OnNodesChange = useCallback(
