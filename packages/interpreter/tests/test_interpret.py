@@ -173,3 +173,19 @@ def test_interpret_success(mock_client: MagicMock, mock_settings: MagicMock) -> 
     assert body["workflow"]["id"] == "test-id-001"
     assert body["confidence"] == 0.9
     assert isinstance(body["warnings"], list)
+
+
+@patch("services.interpret_service.settings")
+@patch("services.interpret_service._client")
+def test_interpret_invalid_json_returns_500(mock_client: MagicMock, mock_settings: MagicMock) -> None:
+    """8. Gemini가 JSON이 아닌 텍스트를 반환하면 500."""
+    mock_settings.use_mock = False
+    mock_client.aio.models.generate_content = AsyncMock(
+        return_value=_make_gemini_response("이것은 JSON이 아닙니다.")
+    )
+
+    resp = client.post(
+        "/api/interpret",
+        json={"sessionId": "sess-invalid-json", "actions": TWO_ACTIONS},
+    )
+    assert resp.status_code == 500

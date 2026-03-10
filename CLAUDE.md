@@ -423,6 +423,18 @@ export const useWorkflowStore = create<WorkflowState>()(
     setRunning: (running) => set(state => { state.isRunning = running; }),
   }))
 );
+
+### React Flow v12 타입 패턴 (절대 변경 금지)
+- `data`는 `Record<string, unknown>` 제약 → toFlowNodes에서 `data: n as unknown as Record<string, unknown>`
+- 커스텀 노드 내부에서 `data as unknown as TriggerNode`로 복원
+- `useReactFlow()` hook은 `<ReactFlow>`를 렌더링하는 컴포넌트에서 사용 불가
+  → 반드시 `ReactFlowProvider` + 내부 컴포넌트(`CanvasInner`) 패턴으로 분리
+
+### editor 추가 파일 (Phase 4에서 생성)
+- `src/vite-env.d.ts` — import.meta.env 타입 선언 (필수)
+- `src/types/chrome.d.ts` — editor에서 chrome API 최소 타입 선언
+- `crypto.randomUUID()` 사용 (nanoid 설치 불필요, 이미 브라우저 내장)
+
 ```
 
 ---
