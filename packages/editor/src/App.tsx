@@ -4,76 +4,124 @@ import { RunPanel } from './components/RunPanel';
 import { NodeEditPanel } from './components/NodeEditPanel';
 import { ImportPanel } from './components/ImportPanel';
 import { NodePickerModal } from './components/NodePickerModal';
+import { Sidebar } from './components/Sidebar';
+import {
+  ChevronDownIcon,
+  ImportIcon,
+  MenuIcon,
+  MimicLogo,
+  SparklesIcon,
+} from './components/icons/AppIcons';
 
 export function App(): JSX.Element {
   const [showImport, setShowImport] = useState(false);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', fontFamily: 'sans-serif', background: '#F3F4F6' }}>
+    <div className="editor-shell">
+      <Sidebar />
 
-      {/* 상단 타이틀바 — 40px */}
-      <header style={{
-        height: 40,
-        flexShrink: 0,
-        background: '#fff',
-        borderBottom: '1px solid #E5E7EB',
-        display: 'flex',
-        alignItems: 'center',
-        padding: '0 16px',
-        gap: 10,
-        zIndex: 10,
-      }}>
-        <strong style={{ fontSize: 14, color: '#111827', letterSpacing: '-0.3px' }}>MIMIC</strong>
-        <span style={{ fontSize: 12, color: '#9CA3AF' }}>워크플로우 에디터</span>
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button
-            onClick={() => setShowImport((v) => !v)}
-            style={{
-              padding: '4px 12px',
-              border: '1px solid #E5E7EB',
-              borderRadius: 6,
-              background: showImport ? '#F3F4F6' : '#fff',
-              fontSize: 12,
-              cursor: 'pointer',
-              color: '#374151',
-              fontWeight: 500,
-            }}
-          >
-            ↓ Import
-          </button>
+      <div className="editor-main">
+        <header
+          style={{
+            height: 'var(--editor-header-height)',
+            padding: '18px 22px 10px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 16,
+          }}
+        >
+          <div className="editor-glass-panel" style={{ borderRadius: 20, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <button
+              type="button"
+              style={{
+                width: 36,
+                height: 36,
+                display: 'grid',
+                placeItems: 'center',
+                borderRadius: 12,
+                border: '1px solid rgba(15, 23, 42, 0.08)',
+                background: '#fff',
+                color: '#4b5563',
+                cursor: 'pointer',
+              }}
+              title="메뉴"
+            >
+              <MenuIcon size={18} />
+            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <MimicLogo size={36} />
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>Gabrielle_Moen</div>
+                <div style={{ marginTop: 2, fontSize: 12, color: 'var(--editor-text-soft)' }}>Workflow Designer</div>
+              </div>
+              <ChevronDownIcon size={16} style={{ color: '#9ca3af' }} />
+            </div>
+          </div>
+
+          <div className="editor-glass-panel" style={{ borderRadius: 20, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+            <span className="editor-pill" style={{ background: '#eef2ff', color: '#4f46e5' }}>
+              <SparklesIcon size={14} />
+              Automation
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>Content Ops Workflow</div>
+              <div style={{ marginTop: 2, fontSize: 12, color: 'var(--editor-text-soft)' }}>
+                좌측 라이브러리에서 노드를 추가하고 캔버스에서 연결하세요.
+              </div>
+            </div>
+          </div>
+
+          <div style={{ marginLeft: 'auto', position: 'relative' }}>
+            <button
+              onClick={() => setShowImport((value) => !value)}
+              style={{
+                height: 44,
+                padding: '0 16px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 10,
+                borderRadius: 16,
+                border: '1px solid rgba(15, 23, 42, 0.08)',
+                background: showImport ? '#111827' : '#ffffff',
+                color: showImport ? '#ffffff' : '#111827',
+                boxShadow: 'var(--editor-shadow-sm)',
+                cursor: 'pointer',
+                fontSize: 13,
+                fontWeight: 700,
+              }}
+            >
+              <ImportIcon size={16} />
+              Import Workflow
+            </button>
+
+            {showImport && (
+              <div
+                className="editor-glass-panel"
+                style={{
+                  position: 'absolute',
+                  top: 56,
+                  right: 0,
+                  width: 360,
+                  borderRadius: 20,
+                  overflow: 'hidden',
+                  zIndex: 50,
+                }}
+              >
+                <ImportPanel />
+              </div>
+            )}
+          </div>
+        </header>
+
+        <div className="editor-canvas-surface">
+          <WorkflowCanvas />
         </div>
-      </header>
 
-      {/* Import 패널 — 헤더 아래 드롭다운 */}
-      {showImport && (
-        <div style={{
-          position: 'absolute',
-          top: 40,
-          right: 0,
-          width: 320,
-          zIndex: 100,
-          background: '#fff',
-          borderLeft: '1px solid #E5E7EB',
-          borderBottom: '1px solid #E5E7EB',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.10)',
-        }}>
-          <ImportPanel />
-        </div>
-      )}
-
-      {/* 캔버스 — 풀스크린 (헤더 40px + 툴바 56px 제외) */}
-      <div style={{ flex: 1, overflow: 'hidden', paddingBottom: 56 }}>
-        <WorkflowCanvas />
+        <RunPanel />
+        <NodeEditPanel />
+        <NodePickerModal />
       </div>
-
-      {/* 하단 고정 툴바 */}
-      <RunPanel />
-
-      {/* 노드 클릭 편집 패널 (우측 슬라이드) */}
-      <NodeEditPanel />
-
-      {/* 더블클릭 노드 선택 팝업 */}
-      <NodePickerModal />
     </div>
   );
 }

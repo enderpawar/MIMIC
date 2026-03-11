@@ -1,24 +1,76 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { WorkflowNode } from '@flowcap/shared';
 import { useWorkflowStore } from '../store/workflowStore';
+import {
+  BellIcon,
+  ClockIcon,
+  CloseIcon,
+  CursorClickIcon,
+  DiamondSplitIcon,
+  HomeIcon,
+  NodeBadge,
+  SearchIcon,
+} from './icons/AppIcons';
 
 interface NodeTypeItem {
-  type: string;
+  type: 'trigger' | 'action' | 'wait' | 'condition' | 'data';
   label: string;
   desc: string;
-  color: string;
-  icon: string;
+  category: 'All types' | 'Basic' | 'Flow Control';
+  tone: string;
+  background: string;
+  icon: JSX.Element;
 }
 
 const NODE_TYPES_LIST: NodeTypeItem[] = [
-  { type: 'trigger',   label: 'Trigger',   desc: '워크플로우 시작점',   color: '#10B981', icon: '▶' },
-  { type: 'action',    label: 'Action',    desc: '클릭·입력·이동',      color: '#3B82F6', icon: '⚡' },
-  { type: 'wait',      label: 'Wait',      desc: '시간·요소 대기',      color: '#F59E0B', icon: '⏳' },
-  { type: 'condition', label: 'Condition', desc: 'true / false 분기',  color: '#F97316', icon: '◆' },
-  { type: 'data',      label: 'Data',      desc: '데이터 추출·저장',    color: '#8B5CF6', icon: '📦' },
+  {
+    type: 'trigger',
+    label: 'Start Node',
+    desc: '워크플로우 시작점',
+    category: 'Basic',
+    tone: '#2563eb',
+    background: 'linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%)',
+    icon: <HomeIcon size={18} />,
+  },
+  {
+    type: 'action',
+    label: 'Email Agent',
+    desc: '클릭·입력·이동 같은 실행 단계',
+    category: 'Basic',
+    tone: '#ea580c',
+    background: 'linear-gradient(135deg, #ffedd5 0%, #fff7ed 100%)',
+    icon: <CursorClickIcon size={18} />,
+  },
+  {
+    type: 'wait',
+    label: 'Creative Writer',
+    desc: '시간 또는 요소 로딩 대기',
+    category: 'Flow Control',
+    tone: '#d97706',
+    background: 'linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%)',
+    icon: <ClockIcon size={18} />,
+  },
+  {
+    type: 'condition',
+    label: 'Condition',
+    desc: 'true / false 분기 처리',
+    category: 'Flow Control',
+    tone: '#475569',
+    background: 'linear-gradient(135deg, #e2e8f0 0%, #f8fafc 100%)',
+    icon: <DiamondSplitIcon size={18} />,
+  },
+  {
+    type: 'data',
+    label: 'Notification',
+    desc: '데이터 추출 및 저장',
+    category: 'Basic',
+    tone: '#7c3aed',
+    background: 'linear-gradient(135deg, #f3e8ff 0%, #faf5ff 100%)',
+    icon: <BellIcon size={18} />,
+  },
 ];
 
-const POPUP_W = 480;
+const POPUP_W = 520;
 const POPUP_H = 420;
 
 export function createDefaultNode(
@@ -43,6 +95,7 @@ export function createDefaultNode(
 export function NodePickerModal(): JSX.Element | null {
   const { pickerPos, placeholderNode, closeNodePicker, addNode } = useWorkflowStore();
   const [query, setQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState<'All types' | 'Basic' | 'Flow Control'>('All types');
 
   const handleClose = useCallback((): void => {
     setQuery('');
@@ -52,6 +105,7 @@ export function NodePickerModal(): JSX.Element | null {
   useEffect(() => {
     if (!pickerPos) return;
     setQuery('');
+    setActiveCategory('All types');
 
     function onKeyDown(e: KeyboardEvent): void {
       if (e.key === 'Escape') handleClose();
@@ -64,8 +118,11 @@ export function NodePickerModal(): JSX.Element | null {
 
   const filtered = NODE_TYPES_LIST.filter(
     (item) =>
-      item.label.toLowerCase().includes(query.toLowerCase()) ||
-      item.desc.includes(query),
+      (activeCategory === 'All types' || item.category === activeCategory) &&
+      (
+        item.label.toLowerCase().includes(query.toLowerCase()) ||
+        item.desc.includes(query)
+      ),
   );
 
   // 화면 경계를 벗어나지 않도록 팝업 위치 보정
@@ -96,24 +153,49 @@ export function NodePickerModal(): JSX.Element | null {
           left,
           zIndex: 1000,
           background: '#fff',
-          borderRadius: 12,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+          borderRadius: 24,
+          boxShadow: '0 28px 56px rgba(15, 23, 42, 0.22)',
           width: POPUP_W,
           overflow: 'hidden',
-          border: '1px solid #E5E7EB',
+          border: '1px solid rgba(15, 23, 42, 0.08)',
+          backdropFilter: 'blur(20px)',
         }}
       >
-        {/* 검색 인풋 */}
-        <div style={{ padding: '12px 16px', borderBottom: '1px solid #F3F4F6' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px 12px' }}>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>Add a node</div>
+            <div style={{ marginTop: 4, fontSize: 12, color: '#6b7280' }}>원하는 단계를 선택해 플로우에 추가하세요.</div>
+          </div>
+          <button
+            onClick={handleClose}
+            style={{
+              width: 34,
+              height: 34,
+              display: 'grid',
+              placeItems: 'center',
+              borderRadius: 12,
+              border: '1px solid rgba(15, 23, 42, 0.08)',
+              background: '#fff',
+              color: '#6b7280',
+              cursor: 'pointer',
+            }}
+          >
+            <CloseIcon size={16} />
+          </button>
+        </div>
+
+        <div style={{ padding: '0 20px 16px', borderBottom: '1px solid rgba(15, 23, 42, 0.06)' }}>
           <div style={{
             display: 'flex',
             alignItems: 'center',
             gap: 8,
-            border: '1.5px solid #7C3AED',
-            borderRadius: 8,
-            padding: '8px 12px',
+            border: '1px solid rgba(37, 99, 235, 0.18)',
+            borderRadius: 16,
+            padding: '10px 12px',
+            background: '#fff',
+            boxShadow: 'var(--editor-shadow-sm)',
           }}>
-            <span style={{ color: '#9CA3AF', fontSize: 14 }}>🔍</span>
+            <SearchIcon size={16} style={{ color: '#9CA3AF' }} />
             <input
               autoFocus
               value={query}
@@ -132,8 +214,7 @@ export function NodePickerModal(): JSX.Element | null {
         </div>
 
         <div style={{ display: 'flex' }}>
-          {/* 좌측: 노드 목록 */}
-          <div style={{ flex: 1, maxHeight: 340, overflowY: 'auto', padding: '8px 0' }}>
+          <div className="editor-scrollbar" style={{ flex: 1, maxHeight: 340, overflowY: 'auto', padding: '12px' }}>
             {filtered.length === 0 && (
               <div style={{ padding: '24px 16px', textAlign: 'center', color: '#9CA3AF', fontSize: 13 }}>
                 검색 결과가 없습니다
@@ -148,30 +229,19 @@ export function NodePickerModal(): JSX.Element | null {
                   display: 'flex',
                   alignItems: 'center',
                   gap: 12,
-                  padding: '10px 16px',
-                  border: 'none',
-                  background: 'none',
+                  padding: '14px',
+                  borderRadius: 18,
+                  border: '1px solid rgba(15, 23, 42, 0.08)',
+                  background: '#fff',
+                  boxShadow: 'var(--editor-shadow-sm)',
                   cursor: 'pointer',
                   textAlign: 'left',
-                  transition: 'background 0.1s',
+                  marginBottom: 10,
                 }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#F9FAFB'; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; }}
               >
-                <div style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: '50%',
-                  background: item.color,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 18,
-                  color: '#fff',
-                  flexShrink: 0,
-                }}>
+                <NodeBadge tone={item.tone} background={item.background}>
                   {item.icon}
-                </div>
+                </NodeBadge>
                 <div>
                   <div style={{ fontWeight: 600, fontSize: 14, color: '#111827' }}>
                     {item.label}
@@ -184,46 +254,47 @@ export function NodePickerModal(): JSX.Element | null {
             ))}
           </div>
 
-          {/* 우측: 카테고리 탭 */}
           <div style={{
-            width: 160,
-            borderLeft: '1px solid #F3F4F6',
-            padding: '8px 0',
-            background: '#FAFAFA',
+            width: 168,
+            borderLeft: '1px solid rgba(15, 23, 42, 0.06)',
+            padding: '14px 12px',
+            background: '#f8fafc',
             flexShrink: 0,
           }}>
             {[
-              { id: 'all',   label: 'All types',   icon: '⊞' },
-              { id: 'basic', label: 'Basic',        icon: '⚙' },
-              { id: 'flow',  label: 'Flow Control', icon: '⇌' },
+              { id: 'All types', label: 'All types' },
+              { id: 'Basic', label: 'Basic' },
+              { id: 'Flow Control', label: 'Flow Control' },
             ].map((cat) => (
               <button
                 key={cat.id}
+                onClick={() => setActiveCategory(cat.id as 'All types' | 'Basic' | 'Flow Control')}
                 style={{
                   width: '100%',
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
-                  padding: '8px 16px',
+                  padding: '10px 12px',
                   border: 'none',
-                  background: cat.id === 'all' ? '#EDE9FE' : 'none',
+                  borderRadius: 14,
+                  background: cat.id === activeCategory ? '#111827' : 'transparent',
                   cursor: 'pointer',
                   fontSize: 13,
-                  color: cat.id === 'all' ? '#7C3AED' : '#374151',
-                  fontWeight: cat.id === 'all' ? 600 : 400,
+                  color: cat.id === activeCategory ? '#ffffff' : '#374151',
+                  fontWeight: cat.id === activeCategory ? 700 : 500,
                   textAlign: 'left',
+                  marginBottom: 6,
                 }}
               >
-                <span>{cat.icon}</span>
                 {cat.label}
               </button>
             ))}
 
-            <div style={{ margin: '8px 16px', borderTop: '1px solid #E5E7EB' }} />
-            <div style={{ padding: '4px 16px', fontSize: 11, color: '#9CA3AF', fontWeight: 600 }}>
+            <div style={{ margin: '14px 4px', borderTop: '1px solid #E5E7EB' }} />
+            <div style={{ padding: '4px', fontSize: 11, color: '#9CA3AF', fontWeight: 600 }}>
               HINT
             </div>
-            <div style={{ padding: '4px 16px', fontSize: 11, color: '#9CA3AF', lineHeight: 1.6 }}>
+            <div style={{ padding: '4px', fontSize: 11, color: '#9CA3AF', lineHeight: 1.7 }}>
               빈 공간 더블클릭<br />→ "+" 노드 생성<br />→ 클릭하여 타입 선택
             </div>
           </div>

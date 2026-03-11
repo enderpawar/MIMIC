@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useEffect, useRef } from 'react';
+import type { CSSProperties } from 'react';
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -19,7 +20,15 @@ import {
 import '@xyflow/react/dist/style.css';
 import type { WorkflowNode, WorkflowEdge } from '@flowcap/shared';
 import { useWorkflowStore } from '../store/workflowStore';
-import { TriggerNodeCard, ActionNodeCard, WaitNodeCard, ConditionNodeCard, PlaceholderNodeCard } from './nodes';
+import { PlusIcon } from './icons/AppIcons';
+import {
+  TriggerNodeCard,
+  ActionNodeCard,
+  WaitNodeCard,
+  ConditionNodeCard,
+  DataNodeCard,
+  PlaceholderNodeCard,
+} from './nodes';
 
 // 컴포넌트 밖에 정의 — React Flow가 매 렌더마다 비교하므로 안정 참조 필수
 const NODE_TYPES = {
@@ -27,6 +36,7 @@ const NODE_TYPES = {
   action: ActionNodeCard,
   wait: WaitNodeCard,
   condition: ConditionNodeCard,
+  data: DataNodeCard,
   placeholder: PlaceholderNodeCard,
 } as const;
 
@@ -46,8 +56,7 @@ function toFlowNodes(
       type: n.type,
       position: n.position,
       data: n as unknown as Record<string, unknown>,
-      // 실행 상태는 노드 카드 내부에서 store로 직접 읽으므로 style 불필요
-      style: borderColor ? { '--status-color': borderColor } as React.CSSProperties : undefined,
+      style: borderColor ? ({ '--status-color': borderColor } as CSSProperties) : undefined,
     };
   });
 }
@@ -62,13 +71,14 @@ function toFlowEdges(edges: WorkflowEdge[]): Edge[] {
     animated: false,
     type: 'smoothstep',
     style: {
-      strokeDasharray: '6 4',
-      stroke: '#9CA3AF',
-      strokeWidth: 2,
+      strokeDasharray: '5 7',
+      stroke: '#a8b0bd',
+      strokeWidth: 1.9,
+      strokeLinecap: 'round',
     },
     markerEnd: {
       type: MarkerType.ArrowClosed,
-      color: '#9CA3AF',
+      color: '#a8b0bd',
       width: 16,
       height: 16,
     },
@@ -204,8 +214,53 @@ function CanvasInner(): JSX.Element {
     return () => el.removeEventListener('dblclick', handleDblClick, { capture: true });
   }, []); // 마운트 시 1회만 등록 (콜백은 ref로 최신 유지)
 
+  const handleFloatingAdd = useCallback((): void => {
+    const el = wrapperRef.current;
+    if (!el) return;
+
+    const rect = el.getBoundingClientRect();
+    const screen = {
+      x: rect.right - 100,
+      y: rect.bottom - 110,
+    };
+    const flow = screenToFlowPositionRef.current(screen);
+    const placeholder = { id: crypto.randomUUID(), position: flow };
+
+    const store = useWorkflowStore.getState();
+    if (store.placeholderNode) {
+      store.closeNodePicker();
+    }
+
+    openNodePickerRef.current(screen, placeholder);
+  }, []);
+
   return (
-    <div ref={wrapperRef} style={{ width: '100%', height: '100%' }}>
+    <div
+      ref={wrapperRef}
+      className="editor-glass-panel"
+      style={{
+        width: '100%',
+        height: '100%',
+        borderRadius: '28px',
+        overflow: 'hidden',
+        position: 'relative',
+      }}
+    >
+      <div
+        style={{
+          position: 'absolute',
+          top: 16,
+          left: 18,
+          zIndex: 6,
+          display: 'flex',
+          gap: 8,
+          alignItems: 'center',
+        }}
+      >
+        <div className="editor-pill">Canvas</div>
+        <div className="editor-pill">Double click to add</div>
+      </div>
+
       <ReactFlow
         nodeTypes={NODE_TYPES}
         nodes={flowNodes}
@@ -218,10 +273,45 @@ function CanvasInner(): JSX.Element {
         defaultViewport={{ x: 120, y: 100, zoom: 0.9 }}
         minZoom={0.2}
         maxZoom={2}
+        fitView={false}
+        proOptions={{ hideAttribution: true }}
       >
-        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#D1D5DB" />
-        <Controls showInteractive={false} style={{ bottom: 16, left: 16 }} />
+        <Background variant={BackgroundVariant.Dots} gap={20} size={1.1} color="var(--editor-canvas-dot)" />
+        <Controls
+          showInteractive={false}
+          style={{
+            bottom: 18,
+            left: 18,
+            border: '1px solid rgba(15, 23, 42, 0.08)',
+            borderRadius: 16,
+            overflow: 'hidden',
+            boxShadow: '0 12px 24px rgba(15, 23, 42, 0.10)',
+          }}
+        />
       </ReactFlow>
+
+      <button
+        onClick={handleFloatingAdd}
+        title="노드 추가"
+        style={{
+          position: 'absolute',
+          right: 24,
+          bottom: 24,
+          width: 62,
+          height: 62,
+          display: 'grid',
+          placeItems: 'center',
+          border: 'none',
+          borderRadius: 999,
+          background: '#ffffff',
+          color: '#111827',
+          boxShadow: '0 18px 34px rgba(15, 23, 42, 0.18)',
+          cursor: 'pointer',
+          zIndex: 6,
+        }}
+      >
+        <PlusIcon size={26} />
+      </button>
     </div>
   );
 }

@@ -1,6 +1,14 @@
 import { useState } from 'react';
 import { useWorkflowStore } from '../store/workflowStore';
 import { startRun } from '../services/runnerSocket';
+import {
+  ChartIcon,
+  ChevronDownIcon,
+  CloseIcon,
+  PlayIcon,
+  SettingsIcon,
+  SparklesIcon,
+} from './icons/AppIcons';
 
 const STATUS_COLOR: Record<string, string> = {
   running: '#3b82f6',
@@ -9,9 +17,9 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 const STATUS_ICON: Record<string, string> = {
-  running: '⏳',
-  success: '✓',
-  failed:  '✕',
+  running: 'RUN',
+  success: 'DONE',
+  failed:  'FAIL',
 };
 
 export function RunPanel(): JSX.Element {
@@ -48,26 +56,39 @@ export function RunPanel(): JSX.Element {
       {logOpen && runLog.length > 0 && (
         <div style={{
           position: 'fixed',
-          bottom: 56,
-          left: 0,
-          right: 0,
-          maxHeight: 220,
-          background: '#1E1E2E',
-          borderTop: '1px solid #374151',
+          bottom: 96,
+          left: 'calc(var(--editor-app-sidebar-width) + 18px)',
+          right: 18,
+          maxHeight: 240,
+          background: 'rgba(15, 23, 42, 0.94)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: 22,
           overflowY: 'auto',
           zIndex: 49,
-          padding: '8px 0',
+          padding: '10px 0',
+          boxShadow: '0 24px 48px rgba(15, 23, 42, 0.28)',
+          backdropFilter: 'blur(18px)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '0 16px 6px', borderBottom: '1px solid #374151', marginBottom: 4 }}>
+            padding: '0 18px 10px', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: 4 }}>
             <span style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 600, letterSpacing: '0.05em' }}>
               RUN LOG
             </span>
             <button
               onClick={() => setLogOpen(false)}
-              style={{ background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', fontSize: 14 }}
+              style={{
+                width: 30,
+                height: 30,
+                display: 'grid',
+                placeItems: 'center',
+                borderRadius: 10,
+                border: '1px solid rgba(255,255,255,0.08)',
+                background: 'transparent',
+                color: '#9CA3AF',
+                cursor: 'pointer',
+              }}
             >
-              ✕
+              <CloseIcon size={14} />
             </button>
           </div>
           <ul style={{ margin: 0, padding: '0 16px', listStyle: 'none', fontSize: 12 }}>
@@ -78,7 +99,7 @@ export function RunPanel(): JSX.Element {
               const icon  = STATUS_ICON[e.status] ?? '·';
               return (
                 <li key={`${e.nodeId}-${e.timestamp}`} style={{
-                  padding: '3px 0',
+                  padding: '8px 0',
                   color: '#D1D5DB',
                   display: 'flex',
                   alignItems: 'center',
@@ -86,9 +107,20 @@ export function RunPanel(): JSX.Element {
                   fontFamily: 'monospace',
                 }}>
                   <span style={{ color: '#4B5563', minWidth: 60 }}>[{time}]</span>
-                  <span style={{ color, fontSize: 13 }}>{icon}</span>
+                  <span style={{
+                    color,
+                    fontSize: 10,
+                    fontWeight: 700,
+                    minWidth: 36,
+                    display: 'inline-flex',
+                    justifyContent: 'center',
+                    padding: '4px 6px',
+                    borderRadius: 999,
+                    border: `1px solid ${color}30`,
+                    background: `${color}14`,
+                  }}>{icon}</span>
                   <span style={{ fontWeight: 500 }}>{nodeLabel}</span>
-                  <span style={{ color: '#6B7280' }}>— {e.status}</span>
+                  <span style={{ color: '#6B7280' }}>{e.status}</span>
                   {e.message && (
                     <span style={{ color: '#ef4444' }}>({e.message})</span>
                   )}
@@ -102,28 +134,30 @@ export function RunPanel(): JSX.Element {
       {/* 하단 고정 툴바 */}
       <div style={{
         position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: 56,
-        background: '#fff',
-        borderTop: '1px solid #E5E7EB',
-        boxShadow: '0 -2px 8px rgba(0,0,0,0.06)',
+        bottom: 18,
+        left: 'calc(var(--editor-app-sidebar-width) + 18px)',
+        right: 18,
+        height: 'var(--editor-bottom-bar-height)',
+        background: 'rgba(255,255,255,0.94)',
+        border: '1px solid rgba(15, 23, 42, 0.08)',
+        borderRadius: 22,
+        boxShadow: 'var(--editor-shadow-lg)',
+        backdropFilter: 'blur(18px)',
         display: 'flex',
         alignItems: 'center',
-        padding: '0 16px',
-        gap: 10,
+        padding: '0 18px',
+        gap: 12,
         zIndex: 50,
       }}>
-        {/* Run once 버튼 */}
         <div style={{ display: 'flex', alignItems: 'center', borderRadius: 8, overflow: 'hidden',
-          boxShadow: '0 1px 4px rgba(124,58,237,0.25)' }}>
+          boxShadow: '0 12px 24px rgba(15, 23, 42, 0.16)' }}>
           <button
             onClick={handleRun}
             disabled={isRunning}
             style={{
-              padding: '8px 16px',
-              background: isRunning ? '#9CA3AF' : '#7C3AED',
+              height: 46,
+              padding: '0 18px',
+              background: isRunning ? '#9CA3AF' : '#111827',
               color: '#fff',
               border: 'none',
               borderRight: '1px solid rgba(255,255,255,0.2)',
@@ -136,36 +170,34 @@ export function RunPanel(): JSX.Element {
               transition: 'background 0.15s',
             }}
           >
-            <span style={{ fontSize: 11 }}>▶</span>
+            <PlayIcon size={12} />
             {isRunning ? '실행 중...' : 'Run once'}
           </button>
           <button
             style={{
-              padding: '8px 10px',
-              background: isRunning ? '#9CA3AF' : '#7C3AED',
+              width: 40,
+              height: 46,
+              background: isRunning ? '#9CA3AF' : '#111827',
               color: '#fff',
               border: 'none',
               cursor: 'pointer',
-              fontSize: 11,
             }}
             title="실행 옵션"
           >
-            ▾
+            <ChevronDownIcon size={14} />
           </button>
         </div>
 
-        {/* 구분선 */}
         <div style={{ width: 1, height: 28, background: '#E5E7EB' }} />
 
-        {/* 로그 토글 버튼 */}
         {runLog.length > 0 && (
           <button
             onClick={() => setLogOpen((v) => !v)}
             style={{
-              padding: '5px 10px',
-              border: '1px solid #E5E7EB',
-              borderRadius: 6,
-              background: logOpen ? '#F3F4F6' : '#fff',
+              padding: '8px 12px',
+              border: '1px solid rgba(15, 23, 42, 0.08)',
+              borderRadius: 14,
+              background: logOpen ? '#f3f4f6' : '#fff',
               cursor: 'pointer',
               fontSize: 12,
               color: '#374151',
@@ -174,7 +206,7 @@ export function RunPanel(): JSX.Element {
               gap: 6,
             }}
           >
-            <span>📋</span>
+            <SparklesIcon size={14} />
             로그 {runLog.length}개
             {successCount > 0 && (
               <span style={{ color: '#22c55e', fontWeight: 600 }}>✓{successCount}</span>
@@ -191,7 +223,7 @@ export function RunPanel(): JSX.Element {
             padding: '4px 10px',
             background: '#FEF2F2',
             border: '1px solid #FCA5A5',
-            borderRadius: 6,
+            borderRadius: 12,
             color: '#DC2626',
             fontSize: 12,
             maxWidth: 300,
@@ -206,21 +238,20 @@ export function RunPanel(): JSX.Element {
         {/* 우측 정렬 도구 버튼들 */}
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
           {[
-            { icon: '⚙', title: '설정' },
-            { icon: '📊', title: '통계' },
-            { icon: '↺', title: '히스토리' },
+            { icon: <SettingsIcon size={16} />, title: '설정' },
+            { icon: <ChartIcon size={16} />, title: '통계' },
+            { icon: <SparklesIcon size={16} />, title: '히스토리' },
           ].map((btn) => (
             <button
               key={btn.title}
               title={btn.title}
               style={{
-                width: 32,
-                height: 32,
-                border: '1px solid #E5E7EB',
-                borderRadius: 6,
+                width: 38,
+                height: 38,
+                border: '1px solid rgba(15, 23, 42, 0.08)',
+                borderRadius: 12,
                 background: '#fff',
                 cursor: 'pointer',
-                fontSize: 14,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',

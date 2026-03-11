@@ -1,115 +1,50 @@
-import { Handle, Position, type NodeProps } from '@xyflow/react';
 import type { TriggerNode } from '@flowcap/shared';
+import type { NodeProps } from '@xyflow/react';
+import { MimicLogo, NodeBadge, PlayIcon } from '../icons/AppIcons';
 import { useWorkflowStore } from '../../store/workflowStore';
+import { NodeCardFrame } from './NodeCardFrame';
 
-const COLOR = '#10B981';
+function getTriggerSubtitle(node: TriggerNode): string {
+  if (node.trigger.kind === 'manual') return 'Main Node';
+  if (node.trigger.kind === 'cron') return node.trigger.cron ?? 'Scheduled';
+  return node.trigger.urlPattern ?? 'URL Visit';
+}
+
+function getTriggerDescription(node: TriggerNode): string {
+  if (node.trigger.kind === 'manual') {
+    return '워크플로우가 수동으로 시작되는 기준점입니다.';
+  }
+  if (node.trigger.kind === 'cron') {
+    return '설정된 일정에 따라 자동으로 실행됩니다.';
+  }
+  return '지정한 URL 패턴에 진입하면 실행됩니다.';
+}
 
 export function TriggerNodeCard({ data, id }: NodeProps): JSX.Element {
   const node = data as unknown as TriggerNode;
-  const deleteNode = useWorkflowStore((s) => s.deleteNode);
-  const nodeRunStatus = useWorkflowStore((s) => s.nodeRunStatus);
-  const nodes = useWorkflowStore((s) => s.nodes);
+  const deleteNode = useWorkflowStore((state) => state.deleteNode);
+  const nodeRunStatus = useWorkflowStore((state) => state.nodeRunStatus);
+  const nodes = useWorkflowStore((state) => state.nodes);
 
-  const status = nodeRunStatus[id];
-  const orderIndex = nodes.findIndex((n) => n.id === id) + 1;
-
-  const borderColor =
-    status === 'running' ? '#3b82f6' :
-    status === 'success' ? '#22c55e' :
-    status === 'failed'  ? '#ef4444' :
-    COLOR;
-
-  const borderStyle = status === 'running' ? 'dashed' : 'solid';
+  const orderIndex = nodes.findIndex((item) => item.id === id) + 1;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-      {/* 원형 노드 */}
-      <div style={{ position: 'relative' }}>
-        <div
-          style={{
-            width: 80,
-            height: 80,
-            borderRadius: '50%',
-            background: COLOR,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 30,
-            color: '#fff',
-            border: `3px ${borderStyle} ${borderColor}`,
-            boxShadow: '0 4px 16px rgba(16,185,129,0.30)',
-            cursor: 'pointer',
-            transition: 'box-shadow 0.2s, border-color 0.2s',
-          }}
-        >
-          ▶
-        </div>
-
-        {/* 삭제 버튼 */}
-        <button
-          onClick={(e) => { e.stopPropagation(); deleteNode(id); }}
-          style={{
-            position: 'absolute',
-            top: -6,
-            right: -6,
-            width: 20,
-            height: 20,
-            borderRadius: '50%',
-            background: '#fff',
-            border: '1.5px solid #E5E7EB',
-            cursor: 'pointer',
-            fontSize: 10,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#6B7280',
-            fontWeight: 700,
-            boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
-            zIndex: 10,
-          }}
-          title="노드 삭제"
-        >
-          ✕
-        </button>
-
-        {/* 순서 배지 */}
-        <div style={{
-          position: 'absolute',
-          bottom: -4,
-          right: -4,
-          width: 20,
-          height: 20,
-          borderRadius: '50%',
-          background: '#fff',
-          border: `2px solid ${COLOR}`,
-          fontSize: 10,
-          fontWeight: 700,
-          color: COLOR,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          lineHeight: 1,
-        }}>
-          {orderIndex}
-        </div>
-
-        {/* Handle — source only (trigger는 시작점) */}
-        <Handle
-          type="source"
-          position={Position.Right}
-          style={{ width: 12, height: 12, background: COLOR, border: '2px solid #fff', right: -6 }}
-        />
-      </div>
-
-      {/* 노드 라벨 (원형 하단 외부) */}
-      <div style={{ textAlign: 'center', maxWidth: 100 }}>
-        <div style={{ fontWeight: 600, fontSize: 13, color: '#111827' }}>{node.label}</div>
-        <div style={{ fontSize: 11, color: '#6B7280', marginTop: 1 }}>
-          {node.trigger.kind === 'manual' ? 'Manual trigger' :
-           node.trigger.kind === 'cron' ? node.trigger.cron ?? 'Cron' :
-           node.trigger.urlPattern ?? 'URL visit'}
-        </div>
-      </div>
-    </div>
+    <NodeCardFrame
+      accentColor="#2563eb"
+      eyebrow="START"
+      title={node.label}
+      subtitle={getTriggerSubtitle(node)}
+      description={getTriggerDescription(node)}
+      tags={['Manual', 'Entry']}
+      icon={
+        <NodeBadge tone="#2563eb" background="linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%)">
+          {node.trigger.kind === 'manual' ? <PlayIcon size={18} /> : <MimicLogo size={20} />}
+        </NodeBadge>
+      }
+      status={nodeRunStatus[id]}
+      orderIndex={orderIndex}
+      onDelete={() => deleteNode(id)}
+      targetHandle={false}
+    />
   );
 }

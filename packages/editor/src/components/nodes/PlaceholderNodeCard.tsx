@@ -1,68 +1,73 @@
 import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { PlusIcon } from '../icons/AppIcons';
 import { useWorkflowStore } from '../../store/workflowStore';
 
 export function PlaceholderNodeCard({ id }: NodeProps): JSX.Element {
-  const placeholderNode = useWorkflowStore((s) => s.placeholderNode);
-  const pickerPos = useWorkflowStore((s) => s.pickerPos);
-  const reopenNodePicker = useWorkflowStore((s) => s.reopenNodePicker);
-  const closeNodePicker = useWorkflowStore((s) => s.closeNodePicker);
+  const placeholderNode = useWorkflowStore((state) => state.placeholderNode);
+  const pickerPos = useWorkflowStore((state) => state.pickerPos);
+  const reopenNodePicker = useWorkflowStore((state) => state.reopenNodePicker);
 
   const isPickerOpen = pickerPos !== null && placeholderNode?.id === id;
 
-  function handleClick(e: React.MouseEvent): void {
-    e.stopPropagation();
+  function handleClick(event: React.MouseEvent): void {
+    event.stopPropagation();
 
     if (isPickerOpen) {
-      // 피커가 열려 있으면 닫기 (플레이스홀더는 유지)
       useWorkflowStore.setState({ pickerPos: null });
       return;
     }
 
-    // 피커 열기 — 노드 오른쪽에 팝업 위치
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    reopenNodePicker({ x: rect.right + 8, y: rect.top });
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    reopenNodePicker({ x: rect.right + 10, y: rect.top + 12 });
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-      <div style={{ position: 'relative' }}>
-        <div
-          onClick={handleClick}
-          style={{
-            width: 80,
-            height: 80,
-            borderRadius: '50%',
-            background: isPickerOpen ? '#EDE9FE' : '#F3F4F6',
-            border: `2px dashed ${isPickerOpen ? '#7C3AED' : '#9CA3AF'}`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 32,
-            color: isPickerOpen ? '#7C3AED' : '#9CA3AF',
-            cursor: 'pointer',
-            transition: 'background 0.15s, border-color 0.15s, color 0.15s',
-            userSelect: 'none',
-            boxShadow: isPickerOpen ? '0 0 0 3px rgba(124,58,237,0.15)' : 'none',
-          }}
-        >
-          +
-        </div>
-
-        <Handle
-          type="target"
-          position={Position.Left}
-          style={{ width: 12, height: 12, background: '#D1D5DB', border: '2px solid #fff', left: -6 }}
-        />
-        <Handle
-          type="source"
-          position={Position.Right}
-          style={{ width: 12, height: 12, background: '#D1D5DB', border: '2px solid #fff', right: -6 }}
-        />
+    <div
+      onClick={handleClick}
+      style={{
+        position: 'relative',
+        width: 88,
+        height: 88,
+        display: 'grid',
+        placeItems: 'center',
+        borderRadius: '50%',
+        background: isPickerOpen ? '#111827' : 'rgba(255, 255, 255, 0.96)',
+        color: isPickerOpen ? '#ffffff' : '#111827',
+        border: `1px solid ${isPickerOpen ? '#111827' : 'rgba(15, 23, 42, 0.08)'}`,
+        boxShadow: isPickerOpen ? '0 16px 38px rgba(15, 23, 42, 0.20)' : '0 12px 28px rgba(15, 23, 42, 0.10)',
+        cursor: 'pointer',
+        transition: 'all 160ms ease',
+      }}
+    >
+      <PlusIcon size={28} />
+      <div
+        style={{
+          position: 'absolute',
+          bottom: -28,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          whiteSpace: 'nowrap',
+          fontSize: 11,
+          fontWeight: 700,
+          color: '#6b7280',
+          letterSpacing: '0.04em',
+        }}
+      >
+        ADD STEP
       </div>
 
-      <div style={{ fontSize: 11, color: '#9CA3AF', fontStyle: 'italic' }}>
-        클릭하여 선택
-      </div>
+      <Handle
+        type="target"
+        position={Position.Left}
+        className="editor-node-handle"
+        style={{ left: -8, background: '#cbd5e1' }}
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        className="editor-node-handle"
+        style={{ right: -8, background: '#cbd5e1' }}
+      />
     </div>
   );
 }

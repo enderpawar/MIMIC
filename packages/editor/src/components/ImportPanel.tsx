@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { CapturedAction } from '@flowcap/shared';
 import { interpret } from '../services/interpreterApi';
 import { useWorkflowStore } from '../store/workflowStore';
+import { ImportIcon, SparklesIcon } from './icons/AppIcons';
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
 
@@ -57,11 +58,11 @@ export function ImportPanel(): JSX.Element {
         <div style={{
           margin: '12px 0',
           padding: '12px',
-          background: '#fef9c3',
-          borderRadius: 8,
-          border: '1px solid #fde047',
+          background: '#fff7ed',
+          borderRadius: 16,
+          border: '1px solid #fed7aa',
           fontSize: 12,
-          color: '#713f12',
+          color: '#9a3412',
           lineHeight: 1.6,
         }}>
           Chrome Extension 팝업에서 에디터를 열거나,<br />
@@ -80,6 +81,7 @@ export function ImportPanel(): JSX.Element {
         disabled={status === 'loading'}
         style={btnStyle(status === 'loading')}
       >
+        <ImportIcon size={15} />
         Extension에서 불러오기
       </button>
 
@@ -104,10 +106,14 @@ function readCapturedActions(): Promise<CapturedAction[]> {
 function SectionTitle(): JSX.Element {
   return (
     <div style={{ marginBottom: 12 }}>
-      <div style={{ fontWeight: 700, fontSize: 13, color: '#1a1a2e' }}>
-        📥 불러오기
+      <div className="editor-pill" style={{ background: '#eef2ff', color: '#4f46e5', width: 'fit-content' }}>
+        <SparklesIcon size={14} />
+        Import
       </div>
-      <div style={{ fontSize: 11, color: '#6B7280', marginTop: 3 }}>
+      <div style={{ fontWeight: 700, fontSize: 16, color: '#111827', marginTop: 12 }}>
+        Extension 불러오기
+      </div>
+      <div style={{ fontSize: 12, color: '#6B7280', marginTop: 6 }}>
         Extension 녹화 내용을 AI로 변환
       </div>
     </div>
@@ -135,9 +141,9 @@ function SuccessState({ confidence, warnings, onReset }: {
     <div style={{ marginTop: 12 }}>
       <div style={{
         padding: '8px 12px',
-        background: '#d1fae5',
-        border: '1px solid #6ee7b7',
-        borderRadius: 8,
+        background: '#ecfdf5',
+        border: '1px solid #86efac',
+        borderRadius: 14,
         fontSize: 12,
         color: '#065f46',
       }}>
@@ -168,7 +174,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
         padding: '8px 12px',
         background: '#fee2e2',
         border: '1px solid #fca5a5',
-        borderRadius: 8,
+        borderRadius: 14,
         fontSize: 12,
         color: '#991b1b',
         lineHeight: 1.5,
@@ -196,22 +202,25 @@ function Spinner(): JSX.Element {
 }
 
 const panelStyle: React.CSSProperties = {
-  padding: 16,
-  borderTop: '1px solid #e5e7eb',
+  padding: 20,
   overflowY: 'auto',
-  background: '#fafafa',
+  background: 'rgba(255,255,255,0.94)',
 };
 
 function btnStyle(disabled: boolean): React.CSSProperties {
   return {
     width: '100%',
-    padding: '9px 0',
-    background: disabled ? '#9ca3af' : '#1a1a2e',
+    height: 46,
+    background: disabled ? '#9ca3af' : '#111827',
     color: '#fff',
     border: 'none',
-    borderRadius: 7,
+    borderRadius: 16,
     fontSize: 13,
-    fontWeight: 600,
+    fontWeight: 700,
     cursor: disabled ? 'not-allowed' : 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   };
 }

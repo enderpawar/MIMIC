@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import type { WorkflowNode, ActionNode, WaitNode, ConditionNode } from '@flowcap/shared';
+import type { WorkflowNode, ActionNode, WaitNode, ConditionNode, DataNode } from '@flowcap/shared';
 import { useWorkflowStore } from '../store/workflowStore';
+import { CloseIcon, SparklesIcon } from './icons/AppIcons';
 
 export function NodeEditPanel(): JSX.Element {
   const { nodes, selectedNodeId, setSelectedNodeId, updateNode } = useWorkflowStore();
@@ -44,6 +45,11 @@ export function NodeEditPanel(): JSX.Element {
         label,
         condition: { ...(node as ConditionNode).condition, selector, value },
       } as Partial<WorkflowNode>);
+    } else if (node.type === 'data') {
+      updateNode(node.id, {
+        label,
+        data: { ...(node as DataNode).data, selector, variableName: value || (node as DataNode).data.variableName },
+      } as Partial<WorkflowNode>);
     }
 
     setSelectedNodeId(null);
@@ -52,45 +58,63 @@ export function NodeEditPanel(): JSX.Element {
   return (
     <div style={{
       position: 'fixed',
-      top: 0,
-      right: 0,
-      width: 300,
-      height: '100%',
-      background: '#fff',
-      borderLeft: '1px solid #e5e7eb',
-      boxShadow: '-4px 0 16px rgba(0,0,0,0.1)',
+      top: 18,
+      right: 18,
+      width: 360,
+      height: 'calc(100% - 110px)',
+      background: 'rgba(255,255,255,0.94)',
+      border: '1px solid rgba(15, 23, 42, 0.08)',
+      borderRadius: 26,
+      boxShadow: 'var(--editor-shadow-lg)',
+      backdropFilter: 'blur(18px)',
       display: 'flex',
       flexDirection: 'column',
-      zIndex: 100,
-      transition: 'transform 0.25s ease',
-      transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
+      zIndex: 60,
+      transition: 'transform 0.25s ease, opacity 0.25s ease',
+      transform: isOpen ? 'translateX(0)' : 'translateX(calc(100% + 24px))',
+      opacity: isOpen ? 1 : 0,
+      pointerEvents: isOpen ? 'auto' : 'none',
     }}>
-      {/* 헤더 */}
       <div style={{
-        padding: '12px 16px',
-        borderBottom: '1px solid #e5e7eb',
+        padding: '18px 18px 14px',
+        borderBottom: '1px solid rgba(15, 23, 42, 0.06)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        background: '#f9fafb',
+        gap: 12,
       }}>
-        <span style={{ fontWeight: 600, fontSize: 14 }}>
-          {node ? `${typeLabel(node.type)} 편집` : '노드 편집'}
-        </span>
+        <div>
+          <div className="editor-pill" style={{ background: '#eef2ff', color: '#4f46e5' }}>
+            <SparklesIcon size={14} />
+            Node Editor
+          </div>
+          <div style={{ marginTop: 10, fontWeight: 700, fontSize: 18, color: '#111827' }}>
+            {node ? `${typeLabel(node.type)} 편집` : '노드 편집'}
+          </div>
+        </div>
         <button
           onClick={() => setSelectedNodeId(null)}
-          style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: '#6B7280' }}
+          style={{
+            width: 36,
+            height: 36,
+            display: 'grid',
+            placeItems: 'center',
+            borderRadius: 12,
+            border: '1px solid rgba(15, 23, 42, 0.08)',
+            background: '#fff',
+            cursor: 'pointer',
+            color: '#6B7280',
+          }}
         >
-          ✕
+          <CloseIcon size={16} />
         </button>
       </div>
 
-      {/* 폼 */}
       {node && (
-        <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div className="editor-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: 18, display: 'flex', flexDirection: 'column', gap: 16 }}>
           <Field label="라벨" value={label} onChange={setLabel} />
 
-          {(node.type === 'action' || node.type === 'condition' || node.type === 'wait') && (
+          {(node.type === 'action' || node.type === 'condition' || node.type === 'wait' || node.type === 'data') && (
             <Field label="Selector" value={selector} onChange={setSelector} mono />
           )}
 
@@ -105,26 +129,30 @@ export function NodeEditPanel(): JSX.Element {
           {node.type === 'condition' && (
             <Field label="비교 값" value={value} onChange={setValue} />
           )}
+
+          {node.type === 'data' && (
+            <Field label="변수명" value={value} onChange={setValue} />
+          )}
         </div>
       )}
 
-      {/* 저장 버튼 */}
-      <div style={{ padding: '12px 16px', borderTop: '1px solid #e5e7eb' }}>
+      <div style={{ padding: '16px 18px 18px', borderTop: '1px solid rgba(15, 23, 42, 0.06)' }}>
         <button
           onClick={handleSave}
           style={{
             width: '100%',
-            padding: '8px 0',
-            background: '#1a1a2e',
+            height: 46,
+            background: '#111827',
             color: '#fff',
             border: 'none',
-            borderRadius: 6,
+            borderRadius: 16,
             fontSize: 14,
-            fontWeight: 600,
+            fontWeight: 700,
             cursor: 'pointer',
+            boxShadow: '0 16px 32px rgba(15, 23, 42, 0.18)',
           }}
         >
-          저장
+          변경 사항 저장
         </button>
       </div>
     </div>
@@ -141,19 +169,15 @@ interface FieldProps {
 
 function Field({ label, value, onChange, mono, type = 'text' }: FieldProps): JSX.Element {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <label style={{ fontSize: 12, fontWeight: 600, color: '#374151' }}>{label}</label>
+    <div className="editor-field">
+      <label>{label}</label>
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         style={{
-          padding: '6px 10px',
-          border: '1px solid #d1d5db',
-          borderRadius: 6,
           fontSize: 13,
           fontFamily: mono ? 'monospace' : 'inherit',
-          outline: 'none',
         }}
       />
     </div>
@@ -171,16 +195,17 @@ function getValue(node: WorkflowNode): string {
   if (node.type === 'action') return (node as ActionNode).action.value ?? '';
   if (node.type === 'wait') return String((node as WaitNode).wait.ms ?? '');
   if (node.type === 'condition') return (node as ConditionNode).condition.value ?? '';
+  if (node.type === 'data') return (node as DataNode).data.variableName ?? '';
   return '';
 }
 
 function typeLabel(type: WorkflowNode['type']): string {
   const map: Partial<Record<WorkflowNode['type'], string>> = {
-    trigger: '▶ 트리거',
-    action: '⚡ 액션',
-    wait: '⏳ 대기',
-    condition: '◆ 조건',
-    data: '📋 데이터',
+    trigger: '트리거',
+    action: '액션',
+    wait: '대기',
+    condition: '조건',
+    data: '데이터',
   };
   return map[type] ?? type;
 }
