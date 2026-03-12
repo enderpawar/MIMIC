@@ -1,77 +1,186 @@
-import { useState } from 'react';
+import type { JSX } from 'react';
+import {
+  ChartIcon,
+  FileIcon,
+  HomeIcon,
+  LayersIcon,
+  MessageIcon,
+  MimicLogo,
+  NodeBadge,
+  SearchIcon,
+  SettingsIcon,
+  UsersIcon,
+} from './icons/AppIcons';
+import { useWorkflowStore } from '../store/workflowStore';
+import { createDefaultNode } from './NodePickerModal';
+import { NODE_DEFINITIONS } from '../constants/nodeDefinitions';
 
-interface PaletteItem {
-  type: string;
-  label: string;
-  color: string;
-  desc: string;
-}
-
-const NODE_PALETTE: PaletteItem[] = [
-  { type: 'trigger',   label: '▶ 트리거',  color: '#10B981', desc: '워크플로우 시작' },
-  { type: 'action',    label: '⚡ 액션',    color: '#3B82F6', desc: '클릭·입력·이동' },
-  { type: 'wait',      label: '⏳ 대기',    color: '#F59E0B', desc: '시간·요소 대기' },
-  { type: 'condition', label: '◆ 조건',    color: '#F97316', desc: 'true/false 분기' },
+const RAIL_ITEMS = [
+  { id: 'home', icon: <HomeIcon size={18} />, active: true },
+  { id: 'layers', icon: <LayersIcon size={18} /> },
+  { id: 'messages', icon: <MessageIcon size={18} /> },
+  { id: 'files', icon: <FileIcon size={18} /> },
+  { id: 'charts', icon: <ChartIcon size={18} /> },
+  { id: 'settings', icon: <SettingsIcon size={18} /> },
+  { id: 'users', icon: <UsersIcon size={18} /> },
 ];
 
 export function Sidebar(): JSX.Element {
-  return (
-    <div style={{
-      padding: '12px 16px',
-      borderBottom: '1px solid #e5e7eb',
-    }}>
-      <div style={{ fontWeight: 700, fontSize: 13, color: '#1a1a2e', marginBottom: 10 }}>
-        🧩 노드 추가
-      </div>
-      <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 8 }}>
-        드래그해서 캔버스에 추가
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {NODE_PALETTE.map((item) => (
-          <DraggableNode key={item.type} item={item} />
-        ))}
-      </div>
-    </div>
-  );
-}
+  const addNode = useWorkflowStore((state) => state.addNode);
+  const nodes = useWorkflowStore((state) => state.nodes);
 
-function DraggableNode({ item }: { item: PaletteItem }): JSX.Element {
-  const [dragging, setDragging] = useState(false);
-
-  function onDragStart(e: React.DragEvent): void {
-    e.dataTransfer.setData('application/reactflow-node', item.type);
-    e.dataTransfer.effectAllowed = 'move';
-    setDragging(true);
+  function handleAdd(type: (typeof NODE_DEFINITIONS)[number]['type']): void {
+    const index = nodes.length;
+    addNode(createDefaultNode(type, { x: 140 + index * 70, y: 120 + index * 36 }));
   }
 
   return (
-    <div
-      draggable
-      onDragStart={onDragStart}
-      onDragEnd={() => setDragging(false)}
+    <aside
       style={{
+        width: 'var(--editor-app-sidebar-width)',
         display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        padding: '7px 10px',
-        borderRadius: 7,
-        border: `1px solid ${item.color}40`,
-        borderLeft: `4px solid ${item.color}`,
-        background: dragging ? `${item.color}18` : '#fff',
-        cursor: 'grab',
-        opacity: dragging ? 0.5 : 1,
-        transition: 'background 0.1s, opacity 0.1s',
-        userSelect: 'none',
+        flexShrink: 0,
+        borderRight: '1px solid rgba(15, 23, 42, 0.08)',
       }}
     >
-      <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: 600, fontSize: 12, color: item.color }}>
-          {item.label}
-        </div>
-        <div style={{ fontSize: 10, color: '#9CA3AF', marginTop: 1 }}>
-          {item.desc}
+      <div
+        style={{
+          width: 'var(--editor-rail-width)',
+          background: 'var(--editor-sidebar-bg)',
+          color: '#fff',
+          padding: '16px 0 18px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 16,
+        }}
+      >
+        <MimicLogo size={34} />
+
+        {RAIL_ITEMS.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            style={{
+              width: 42,
+              height: 42,
+              display: 'grid',
+              placeItems: 'center',
+              borderRadius: 14,
+              border: '1px solid transparent',
+              background: item.active ? 'rgba(255,255,255,0.14)' : 'transparent',
+              color: item.active ? '#ffffff' : 'var(--editor-sidebar-muted)',
+              cursor: 'pointer',
+            }}
+          >
+            {item.icon}
+          </button>
+        ))}
+
+        <div style={{ flex: 1 }} />
+
+        <div
+          style={{
+            width: 42,
+            height: 42,
+            display: 'grid',
+            placeItems: 'center',
+            borderRadius: 999,
+            background: 'rgba(255,255,255,0.12)',
+            color: '#ffffff',
+            fontSize: 12,
+            fontWeight: 700,
+          }}
+        >
+          U
         </div>
       </div>
-    </div>
+
+      <div
+        className="editor-scrollbar"
+        style={{
+          width: 'var(--editor-sidebar-width)',
+          padding: '22px 18px',
+          background: 'rgba(255,255,255,0.72)',
+          backdropFilter: 'blur(18px)',
+          overflowY: 'auto',
+        }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          <div>
+            <div className="editor-section-title">Node Library</div>
+            <p className="editor-section-caption" style={{ marginTop: 6 }}>
+              Add node cards from the library.
+            </p>
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '10px 12px',
+              borderRadius: 16,
+              background: '#ffffff',
+              border: '1px solid rgba(15, 23, 42, 0.08)',
+              boxShadow: 'var(--editor-shadow-sm)',
+            }}
+          >
+            <SearchIcon size={16} style={{ color: '#9ca3af' }} />
+            <span style={{ fontSize: 13, color: '#98a0ae' }}>Search nodes, apps, triggers...</span>
+          </div>
+
+          <div
+            style={{
+              borderRadius: 20,
+              padding: 16,
+              background: 'linear-gradient(180deg, #111827 0%, #1f2937 100%)',
+              color: '#fff',
+              boxShadow: '0 18px 40px rgba(15, 23, 42, 0.22)',
+            }}
+          >
+            <div className="editor-pill" style={{ background: 'rgba(255,255,255,0.12)', color: '#fff', borderColor: 'rgba(255,255,255,0.12)' }}>
+              Featured
+            </div>
+            <div style={{ marginTop: 12, fontSize: 18, fontWeight: 700 }}>Build automation faster</div>
+            <p style={{ margin: '8px 0 0', fontSize: 13, lineHeight: 1.6, color: 'rgba(255,255,255,0.76)' }}>
+              Combine start, action, wait, and condition nodes to build your workflow.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {NODE_DEFINITIONS.map((item) => (
+              <button
+                key={item.type}
+                type="button"
+                onClick={() => handleAdd(item.type)}
+                style={{
+                  width: '100%',
+                  padding: '14px',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 12,
+                  borderRadius: 18,
+                  border: '1px solid rgba(15, 23, 42, 0.08)',
+                  background: '#fff',
+                  boxShadow: 'var(--editor-shadow-sm)',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                }}
+              >
+                <NodeBadge tone={item.tone} background={item.background}>
+                  {item.icon}
+                </NodeBadge>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{item.label}</div>
+                  <div style={{ marginTop: 2, fontSize: 12, fontWeight: 600, color: '#6b7280' }}>{item.subtitle}</div>
+                  <div style={{ marginTop: 8, fontSize: 12, lineHeight: 1.5, color: '#6b7280' }}>{item.description}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </aside>
   );
 }

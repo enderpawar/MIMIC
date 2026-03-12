@@ -1,56 +1,46 @@
-import { Handle, Position, type NodeProps } from '@xyflow/react';
 import type { TriggerNode } from '@flowcap/shared';
-import { useWorkflowStore } from '../../store/workflowStore';
+import type { NodeProps } from '@xyflow/react';
+import { MimicLogo, NodeBadge, PlayIcon } from '../icons/AppIcons';
+import { NodeCardFrame } from './NodeCardFrame';
+import { useNodeCard } from '../../hooks/useNodeCard';
 
-const COLOR = '#10B981';
+function getTriggerSubtitle(node: TriggerNode): string {
+  if (node.trigger.kind === 'manual') return 'Main Node';
+  if (node.trigger.kind === 'cron') return node.trigger.cron ?? 'Scheduled';
+  return node.trigger.urlPattern ?? 'URL Visit';
+}
+
+function getTriggerDescription(node: TriggerNode): string {
+  if (node.trigger.kind === 'manual') {
+    return 'Workflow starts manually from this node.';
+  }
+  if (node.trigger.kind === 'cron') {
+    return 'Runs automatically on the configured schedule.';
+  }
+  return 'Runs when the URL pattern is visited.';
+}
 
 export function TriggerNodeCard({ data, id }: NodeProps): JSX.Element {
   const node = data as unknown as TriggerNode;
-  const deleteNode = useWorkflowStore((s) => s.deleteNode);
+  const { orderIndex, status, deleteNode } = useNodeCard(id);
 
   return (
-    <div style={{
-      border: `2px solid ${COLOR}`,
-      borderRadius: 10,
-      minWidth: 180,
-      background: '#fff',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-      fontSize: 13,
-      overflow: 'hidden',
-    }}>
-      <div style={{
-        background: `${COLOR}26`,
-        padding: '6px 12px',
-        fontWeight: 600,
-        color: COLOR,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 6,
-      }}>
-        <span>▶</span>
-        <span style={{ textTransform: 'capitalize' }}>{node.trigger.kind}</span>
-        <button
-          onClick={(e) => { e.stopPropagation(); deleteNode(id); }}
-          style={{
-            marginLeft: 'auto',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            color: COLOR,
-            fontWeight: 700,
-            fontSize: 14,
-            lineHeight: 1,
-            padding: '0 2px',
-          }}
-          title="노드 삭제"
-        >
-          ✕
-        </button>
-      </div>
-      <div style={{ padding: '6px 12px', color: '#374151' }}>
-        {node.label}
-      </div>
-      <Handle type="source" position={Position.Bottom} />
-    </div>
+    <NodeCardFrame
+      accentColor="#2563eb"
+      eyebrow="START"
+      title={node.label}
+      subtitle={getTriggerSubtitle(node)}
+      description={getTriggerDescription(node)}
+      tags={['Manual', 'Entry']}
+      icon={
+        <NodeBadge tone="#2563eb" background="linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%)">
+          {node.trigger.kind === 'manual' ? <PlayIcon size={18} /> : <MimicLogo size={20} />}
+        </NodeBadge>
+      }
+      status={status}
+      orderIndex={orderIndex}
+      onDelete={() => deleteNode(id)}
+      targetHandle={false}
+    />
   );
 }

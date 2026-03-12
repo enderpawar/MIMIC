@@ -23,7 +23,7 @@ async function connectWithRetry(maxRetries = 3, intervalMs = 3000): Promise<Sock
       }
     }
   }
-  throw new Error('Runner에 연결할 수 없습니다 (3회 재시도 실패)');
+  throw new Error('Failed to connect to runner (3 retries)');
 }
 
 export async function startRun(workflow: Workflow): Promise<void> {
@@ -31,7 +31,7 @@ export async function startRun(workflow: Workflow): Promise<void> {
     useWorkflowStore.getState();
   clearRunStatus();
 
-  // 중복 호출 시 이전 소켓 정리
+  // Clean up previous socket on duplicate call
   if (socket) {
     socket.disconnect();
     socket = null;
@@ -46,9 +46,9 @@ export async function startRun(workflow: Workflow): Promise<void> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ workflowId: workflow.id, workflow }),
     });
-    if (!res.ok) throw new Error(`Runner 오류: ${res.status}`);
+    if (!res.ok) throw new Error(`Runner error: ${res.status}`);
   } catch (err) {
-    // fetch 실패 시 소켓 정리 후 에러 전파
+    // Clean up socket and rethrow on fetch failure
     socket.disconnect();
     socket = null;
     throw err;

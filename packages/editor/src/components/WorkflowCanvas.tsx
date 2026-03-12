@@ -1,10 +1,12 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useEffect, useRef } from 'react';
+import type { CSSProperties } from 'react';
+import { STATUS_BADGE_COLOR } from '../utils/statusColors';
 import {
   ReactFlow,
   ReactFlowProvider,
   Background,
+  BackgroundVariant,
   Controls,
-  MiniMap,
   useReactFlow,
   type Node,
   type Edge,
@@ -14,18 +16,29 @@ import {
   applyNodeChanges,
   applyEdgeChanges,
   type NodeMouseHandler,
+  MarkerType,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import type { WorkflowNode, WorkflowEdge } from '@flowcap/shared';
 import { useWorkflowStore } from '../store/workflowStore';
-import { TriggerNodeCard, ActionNodeCard, WaitNodeCard, ConditionNodeCard } from './nodes';
+import { PlusIcon } from './icons/AppIcons';
+import {
+  TriggerNodeCard,
+  ActionNodeCard,
+  WaitNodeCard,
+  ConditionNodeCard,
+  DataNodeCard,
+  PlaceholderNodeCard,
+} from './nodes';
 
-// 컴포넌트 밖에 정의 — React Flow가 매 렌더마다 비교하므로 안정 참조 필수
+// Stable reference required for React Flow node type comparison
 const NODE_TYPES = {
   trigger: TriggerNodeCard,
   action: ActionNodeCard,
   wait: WaitNodeCard,
   condition: ConditionNodeCard,
+  data: DataNodeCard,
+  placeholder: PlaceholderNodeCard,
 } as const;
 
 function toFlowNodes(
@@ -34,17 +47,13 @@ function toFlowNodes(
 ): Node[] {
   return nodes.map((n) => {
     const status = nodeRunStatus[n.id];
-    const outline =
-      status === 'running' ? '2px dashed #3b82f6' :
-      status === 'success' ? '2px solid #22c55e' :
-      status === 'failed'  ? '2px solid #ef4444' :
-      undefined;
+    const borderColor = status ? STATUS_BADGE_COLOR[status] : undefined;
     return {
       id: n.id,
       type: n.type,
       position: n.position,
       data: n as unknown as Record<string, unknown>,
-      style: outline ? { outline, borderRadius: 8 } : undefined,
+      style: borderColor ? ({ '--status-color': borderColor } as CSSProperties) : undefined,
     };
   });
 }
@@ -54,44 +63,56 @@ function toFlowEdges(edges: WorkflowEdge[]): Edge[] {
     id: e.id,
     source: e.source,
     target: e.target,
-    sourceHandle: e.label,  // ConditionNode true/false handle
+    sourceHandle: e.label,
     label: e.label,
-    animated: true,
+    animated: false,
+    type: 'smoothstep',
+    style: {
+      strokeDasharray: '5 7',
+      stroke: '#a8b0bd',
+      strokeWidth: 1.9,
+      strokeLinecap: 'round',
+    },
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+      color: '#a8b0bd',
+      width: 16,
+      height: 16,
+    },
   }));
 }
 
-function createDefaultNode(
-  type: string,
-  position: { x: number; y: number },
-): WorkflowNode {
-  const id = crypto.randomUUID();
-  switch (type) {
-    case 'action':
-      return { id, type: 'action', label: '새 액션', position, action: { kind: 'click', selector: '', url: '' } };
-    case 'wait':
-      return { id, type: 'wait', label: '새 대기', position, wait: { kind: 'duration', ms: 1000 } };
-    case 'condition':
-      return { id, type: 'condition', label: '새 조건', position, condition: { selector: '', operator: 'exists' } };
-    default: // trigger
-      return { id, type: 'trigger', label: '새 트리거', position, trigger: { kind: 'manual' } };
-  }
-}
-
-// useReactFlow()를 사용하기 위해 ReactFlow를 렌더링하는 내부 컴포넌트 분리
+// Inner component to use useReactFlow() (must render inside ReactFlow)
 function CanvasInner(): JSX.Element {
-  const { nodes, edges, nodeRunStatus, setWorkflow, setSelectedNodeId, addNode } = useWorkflowStore();
+  const {
+    nodes, edges, nodeRunStatus,
+    setWorkflow, setSelectedNodeId,
+    openNodePicker, placeholderNode,
+  } = useWorkflowStore();
   const { screenToFlowPosition } = useReactFlow();
 
-  // [fix] 매 렌더 재계산 방지 — useMemo로 안정 참조 유지
-  const flowNodes = useMemo(() => toFlowNodes(nodes, nodeRunStatus), [nodes, nodeRunStatus]);
+  // Merge workflow nodes and placeholder for React Flow
+  const flowNodes = useMemo(() => {
+    const wfNodes = toFlowNodes(nodes, nodeRunStatus);
+    if (placeholderNode) {
+      wfNodes.push({
+        id: placeholderNode.id,
+        type: 'placeholder',
+        position: placeholderNode.position,
+        data: {},
+      });
+    }
+    return wfNodes;
+  }, [nodes, nodeRunStatus, placeholderNode]);
   const flowEdges = useMemo(() => toFlowEdges(edges), [edges]);
 
   const onNodesChange: OnNodesChange = useCallback(
     (changes) => {
-      // 'position' 변경만 스토어에 반영 — 'dimensions'/'internals'/'select' 변경은
-      // setWorkflow 호출 시 새 배열 참조가 생성돼 React Flow가 updateNodeInternals를
-      // 재실행하는 무한 루프를 유발하므로 무시
-      const positionChanges = changes.filter((c) => c.type === 'position');
+      // Only sync 'position' to store to avoid infinite loop; exclude placeholder
+      const placeholderId = placeholderNode?.id;
+      const positionChanges = changes.filter(
+        (c) => c.type === 'position' && c.id !== placeholderId,
+      );
       if (positionChanges.length === 0) return;
 
       const updated = applyNodeChanges(positionChanges, flowNodes);
@@ -101,7 +122,7 @@ function CanvasInner(): JSX.Element {
       });
       setWorkflow(merged, edges);
     },
-    [nodes, edges, flowNodes, setWorkflow],
+    [nodes, edges, flowNodes, setWorkflow, placeholderNode],
   );
 
   const onEdgesChange: OnEdgesChange = useCallback(
@@ -120,7 +141,6 @@ function CanvasInner(): JSX.Element {
 
   const onConnect = useCallback(
     (connection: Connection) => {
-      // [fix] null 가드 — Connection 타입은 string | null
       if (!connection.source || !connection.target) return;
 
       const edgeLabel =
@@ -128,7 +148,6 @@ function CanvasInner(): JSX.Element {
           ? connection.sourceHandle
           : undefined;
 
-      // [fix] 중복 엣지 방지 — 같은 source+target+label 조합이 이미 존재하면 무시
       const isDuplicate = edges.some(
         (e) => e.source === connection.source && e.target === connection.target && e.label === edgeLabel,
       );
@@ -152,26 +171,90 @@ function CanvasInner(): JSX.Element {
     [setSelectedNodeId],
   );
 
-  const onDragOver = useCallback((e: React.DragEvent): void => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // Keep screenToFlowPosition / openNodePicker in ref to minimize effect deps
+  const screenToFlowPositionRef = useRef(screenToFlowPosition);
+  const openNodePickerRef = useRef(openNodePicker);
+  useEffect(() => { screenToFlowPositionRef.current = screenToFlowPosition; });
+  useEffect(() => { openNodePickerRef.current = openNodePicker; });
+
+  // Double-click on empty area: create placeholder + open NodePickerModal (capture phase)
+  useEffect(() => {
+    const el = wrapperRef.current;
+    if (!el) return;
+
+    function handleDblClick(e: MouseEvent): void {
+      const target = e.target as Element;
+      // Ignore clicks on node/edge/controls
+      if (
+        target.closest('.react-flow__node') ||
+        target.closest('.react-flow__edge') ||
+        target.closest('.react-flow__controls') ||
+        target.closest('.react-flow__minimap')
+      ) return;
+
+      // Remove existing placeholder
+      const store = useWorkflowStore.getState();
+      if (store.placeholderNode) store.closeNodePicker();
+
+      const flow = screenToFlowPositionRef.current({ x: e.clientX, y: e.clientY });
+      const placeholder = { id: crypto.randomUUID(), position: flow };
+      openNodePickerRef.current({ x: e.clientX, y: e.clientY }, placeholder);
+    }
+
+    // capture: true so we run before React Flow's bubble handler
+    el.addEventListener('dblclick', handleDblClick, { capture: true });
+    return () => el.removeEventListener('dblclick', handleDblClick, { capture: true });
+  }, []); // Register once on mount; callbacks kept current via ref
+
+  const handleFloatingAdd = useCallback((): void => {
+    const el = wrapperRef.current;
+    if (!el) return;
+
+    const rect = el.getBoundingClientRect();
+    const screen = {
+      x: rect.right - 100,
+      y: rect.bottom - 110,
+    };
+    const flow = screenToFlowPositionRef.current(screen);
+    const placeholder = { id: crypto.randomUUID(), position: flow };
+
+    const store = useWorkflowStore.getState();
+    if (store.placeholderNode) {
+      store.closeNodePicker();
+    }
+
+    openNodePickerRef.current(screen, placeholder);
   }, []);
 
-  const onDrop = useCallback(
-    (e: React.DragEvent): void => {
-      e.preventDefault();
-      const nodeType = e.dataTransfer.getData('application/reactflow-node');
-      if (!nodeType) return;
-      const position = screenToFlowPosition({ x: e.clientX, y: e.clientY });
-      addNode(createDefaultNode(nodeType, position));
-    },
-    [screenToFlowPosition, addNode],
-  );
-
   return (
-    <div style={{ width: '100%', height: '100%' }}>
-      {/* [fix] fitView 제거 — 매 렌더마다 뷰포트 리셋 방지. 초기 줌만 defaultViewport로 설정 */}
-      {/* [fix] onDragOver/onDrop을 ReactFlow 컴포넌트에 직접 붙임 — wrapper div에 붙이면 React Flow 내부가 이벤트를 소비해 drop이 도달 안 할 수 있음 */}
+    <div
+      ref={wrapperRef}
+      className="editor-glass-panel"
+      style={{
+        width: '100%',
+        height: '100%',
+        borderRadius: '28px',
+        overflow: 'hidden',
+        position: 'relative',
+      }}
+    >
+      <div
+        style={{
+          position: 'absolute',
+          top: 16,
+          left: 18,
+          zIndex: 6,
+          display: 'flex',
+          gap: 8,
+          alignItems: 'center',
+        }}
+      >
+        <div className="editor-pill">Canvas</div>
+        <div className="editor-pill">Double click to add</div>
+      </div>
+
       <ReactFlow
         nodeTypes={NODE_TYPES}
         nodes={flowNodes}
@@ -181,14 +264,48 @@ function CanvasInner(): JSX.Element {
         onConnect={onConnect}
         onNodeClick={onNodeClick}
         onPaneClick={() => setSelectedNodeId(null)}
-        onDragOver={onDragOver}
-        onDrop={onDrop}
-        defaultViewport={{ x: 100, y: 80, zoom: 0.85 }}
+        defaultViewport={{ x: 120, y: 100, zoom: 0.9 }}
+        minZoom={0.2}
+        maxZoom={2}
+        fitView={false}
+        proOptions={{ hideAttribution: true }}
       >
-        <Background />
-        <Controls />
-        <MiniMap />
+        <Background variant={BackgroundVariant.Dots} gap={20} size={1.1} color="var(--editor-canvas-dot)" />
+        <Controls
+          showInteractive={false}
+          style={{
+            bottom: 18,
+            left: 18,
+            border: '1px solid rgba(15, 23, 42, 0.08)',
+            borderRadius: 16,
+            overflow: 'hidden',
+            boxShadow: '0 12px 24px rgba(15, 23, 42, 0.10)',
+          }}
+        />
       </ReactFlow>
+
+      <button
+        onClick={handleFloatingAdd}
+        title="Add node"
+        style={{
+          position: 'absolute',
+          right: 24,
+          bottom: 24,
+          width: 62,
+          height: 62,
+          display: 'grid',
+          placeItems: 'center',
+          border: 'none',
+          borderRadius: 999,
+          background: '#ffffff',
+          color: '#111827',
+          boxShadow: '0 18px 34px rgba(15, 23, 42, 0.18)',
+          cursor: 'pointer',
+          zIndex: 6,
+        }}
+      >
+        <PlusIcon size={26} />
+      </button>
     </div>
   );
 }
