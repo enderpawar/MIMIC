@@ -9,18 +9,7 @@ import {
   SettingsIcon,
   SparklesIcon,
 } from './icons/AppIcons';
-
-const STATUS_COLOR: Record<string, string> = {
-  running: '#3b82f6',
-  success: '#22c55e',
-  failed:  '#ef4444',
-};
-
-const STATUS_ICON: Record<string, string> = {
-  running: 'RUN',
-  success: 'DONE',
-  failed:  'FAIL',
-};
+import { STATUS_BADGE_COLOR, STATUS_BADGE_ICON } from '../utils/statusColors';
 
 export function RunPanel(): JSX.Element {
   const { nodes, edges, isRunning, runLog, runError, setRunning, setRunError, clearRunStatus } =
@@ -43,7 +32,7 @@ export function RunPanel(): JSX.Element {
       });
     } catch (err) {
       setRunning(false);
-      setRunError(err instanceof Error ? err.message : '알 수 없는 오류');
+      setRunError(err instanceof Error ? err.message : 'Unknown error');
     }
   }
 
@@ -52,7 +41,7 @@ export function RunPanel(): JSX.Element {
 
   return (
     <>
-      {/* 로그 드로어 — 툴바 위로 펼쳐짐 */}
+      {/* Log drawer above toolbar */}
       {logOpen && runLog.length > 0 && (
         <div style={{
           position: 'fixed',
@@ -94,9 +83,9 @@ export function RunPanel(): JSX.Element {
           <ul style={{ margin: 0, padding: '0 16px', listStyle: 'none', fontSize: 12 }}>
             {runLog.map((e) => {
               const nodeLabel = nodes.find((n) => n.id === e.nodeId)?.label ?? e.nodeId;
-              const time = new Date(e.timestamp).toLocaleTimeString('ko-KR', { hour12: false });
-              const color = STATUS_COLOR[e.status] ?? '#6b7280';
-              const icon  = STATUS_ICON[e.status] ?? '·';
+              const time = new Date(e.timestamp).toLocaleTimeString('en-US', { hour12: false });
+              const color = STATUS_BADGE_COLOR[e.status] ?? '#6b7280';
+              const icon  = STATUS_BADGE_ICON[e.status] ?? '·';
               return (
                 <li key={`${e.nodeId}-${e.timestamp}`} style={{
                   padding: '8px 0',
@@ -131,7 +120,7 @@ export function RunPanel(): JSX.Element {
         </div>
       )}
 
-      {/* 하단 고정 툴바 */}
+      {/* Bottom toolbar */}
       <div style={{
         position: 'fixed',
         bottom: 18,
@@ -171,7 +160,7 @@ export function RunPanel(): JSX.Element {
             }}
           >
             <PlayIcon size={12} />
-            {isRunning ? '실행 중...' : 'Run once'}
+            {isRunning ? 'Running...' : 'Run once'}
           </button>
           <button
             style={{
@@ -182,7 +171,7 @@ export function RunPanel(): JSX.Element {
               border: 'none',
               cursor: 'pointer',
             }}
-            title="실행 옵션"
+            title="Run options"
           >
             <ChevronDownIcon size={14} />
           </button>
@@ -207,7 +196,7 @@ export function RunPanel(): JSX.Element {
             }}
           >
             <SparklesIcon size={14} />
-            로그 {runLog.length}개
+            Log {runLog.length}
             {successCount > 0 && (
               <span style={{ color: '#22c55e', fontWeight: 600 }}>✓{successCount}</span>
             )}
@@ -217,7 +206,7 @@ export function RunPanel(): JSX.Element {
           </button>
         )}
 
-        {/* 에러 배지 */}
+        {/* Error badge */}
         {runError && (
           <div style={{
             padding: '4px 10px',
@@ -235,12 +224,12 @@ export function RunPanel(): JSX.Element {
           </div>
         )}
 
-        {/* 우측 정렬 도구 버튼들 */}
+        {/* Tool buttons */}
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
           {[
-            { icon: <SettingsIcon size={16} />, title: '설정' },
-            { icon: <ChartIcon size={16} />, title: '통계' },
-            { icon: <SparklesIcon size={16} />, title: '히스토리' },
+            { icon: <SettingsIcon size={16} />, title: 'Settings' },
+            { icon: <ChartIcon size={16} />, title: 'Stats' },
+            { icon: <SparklesIcon size={16} />, title: 'History' },
           ].map((btn) => (
             <button
               key={btn.title}

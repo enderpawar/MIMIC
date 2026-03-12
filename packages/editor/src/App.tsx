@@ -44,7 +44,7 @@ export function App(): JSX.Element {
                 color: '#4b5563',
                 cursor: 'pointer',
               }}
-              title="메뉴"
+              title="Menu"
             >
               <MenuIcon size={18} />
             </button>
@@ -52,7 +52,7 @@ export function App(): JSX.Element {
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <MimicLogo size={36} />
               <div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>Gabrielle_Moen</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>MIMIC</div>
                 <div style={{ marginTop: 2, fontSize: 12, color: 'var(--editor-text-soft)' }}>Workflow Designer</div>
               </div>
               <ChevronDownIcon size={16} style={{ color: '#9ca3af' }} />
@@ -67,7 +67,7 @@ export function App(): JSX.Element {
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>Content Ops Workflow</div>
               <div style={{ marginTop: 2, fontSize: 12, color: 'var(--editor-text-soft)' }}>
-                좌측 라이브러리에서 노드를 추가하고 캔버스에서 연결하세요.
+                Add nodes from the library and connect them on the canvas.
               </div>
             </div>
           </div>

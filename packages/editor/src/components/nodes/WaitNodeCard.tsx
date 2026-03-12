@@ -1,19 +1,16 @@
 import type { WaitNode } from '@flowcap/shared';
 import type { NodeProps } from '@xyflow/react';
 import { ClockIcon, NodeBadge } from '../icons/AppIcons';
-import { useWorkflowStore } from '../../store/workflowStore';
 import { NodeCardFrame } from './NodeCardFrame';
-
-function truncate(value: string, maxLength = 24): string {
-  return value.length > maxLength ? `${value.slice(0, maxLength)}...` : value;
-}
+import { useNodeCard } from '../../hooks/useNodeCard';
+import { truncate } from '../../utils/truncate';
 
 function getWaitDescription(node: WaitNode): { subtitle: string; description: string; tags: string[] } {
   if (node.wait.kind === 'duration') {
     const ms = node.wait.ms ?? 1000;
     return {
       subtitle: 'Delay',
-      description: `${ms}ms 동안 다음 단계를 기다립니다.`,
+      description: `Wait ${ms}ms before next step.`,
       tags: ['Wait', `${ms}ms`],
     };
   }
@@ -22,25 +19,21 @@ function getWaitDescription(node: WaitNode): { subtitle: string; description: st
     const selector = node.wait.selector?.trim() ?? '';
     return {
       subtitle: 'Element',
-      description: selector ? `${truncate(selector)} 요소가 나타날 때까지 대기합니다.` : '지정한 요소가 준비될 때까지 대기합니다.',
+      description: selector ? `Wait until ${truncate(selector)} appears.` : 'Wait until the element is ready.',
       tags: ['Wait', 'Element'],
     };
   }
 
   return {
     subtitle: 'Network',
-    description: '페이지 네트워크 요청이 안정화될 때까지 대기합니다.',
+    description: 'Wait until network is idle.',
     tags: ['Wait', 'Network'],
   };
 }
 
 export function WaitNodeCard({ data, id }: NodeProps): JSX.Element {
   const node = data as unknown as WaitNode;
-  const deleteNode = useWorkflowStore((state) => state.deleteNode);
-  const nodeRunStatus = useWorkflowStore((state) => state.nodeRunStatus);
-  const nodes = useWorkflowStore((state) => state.nodes);
-
-  const orderIndex = nodes.findIndex((item) => item.id === id) + 1;
+  const { orderIndex, status, deleteNode } = useNodeCard(id);
   const presentation = getWaitDescription(node);
 
   return (
@@ -56,7 +49,7 @@ export function WaitNodeCard({ data, id }: NodeProps): JSX.Element {
           <ClockIcon size={18} />
         </NodeBadge>
       }
-      status={nodeRunStatus[id]}
+      status={status}
       orderIndex={orderIndex}
       onDelete={() => deleteNode(id)}
     />

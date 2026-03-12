@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useEffect, useRef } from 'react';
 import type { CSSProperties } from 'react';
+import { STATUS_BADGE_COLOR } from '../utils/statusColors';
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -30,7 +31,7 @@ import {
   PlaceholderNodeCard,
 } from './nodes';
 
-// 컴포넌트 밖에 정의 — React Flow가 매 렌더마다 비교하므로 안정 참조 필수
+// Stable reference required for React Flow node type comparison
 const NODE_TYPES = {
   trigger: TriggerNodeCard,
   action: ActionNodeCard,
@@ -46,11 +47,7 @@ function toFlowNodes(
 ): Node[] {
   return nodes.map((n) => {
     const status = nodeRunStatus[n.id];
-    const borderColor =
-      status === 'running' ? '#3b82f6' :
-      status === 'success' ? '#22c55e' :
-      status === 'failed'  ? '#ef4444' :
-      undefined;
+    const borderColor = status ? STATUS_BADGE_COLOR[status] : undefined;
     return {
       id: n.id,
       type: n.type,
@@ -85,7 +82,7 @@ function toFlowEdges(edges: WorkflowEdge[]): Edge[] {
   }));
 }
 
-// useReactFlow()를 사용하기 위해 ReactFlow를 렌더링하는 내부 컴포넌트 분리
+// Inner component to use useReactFlow() (must render inside ReactFlow)
 function CanvasInner(): JSX.Element {
   const {
     nodes, edges, nodeRunStatus,
@@ -94,7 +91,7 @@ function CanvasInner(): JSX.Element {
   } = useWorkflowStore();
   const { screenToFlowPosition } = useReactFlow();
 
-  // 워크플로우 노드 + 플레이스홀더 노드를 합쳐서 React Flow에 전달
+  // Merge workflow nodes and placeholder for React Flow
   const flowNodes = useMemo(() => {
     const wfNodes = toFlowNodes(nodes, nodeRunStatus);
     if (placeholderNode) {
@@ -111,8 +108,7 @@ function CanvasInner(): JSX.Element {
 
   const onNodesChange: OnNodesChange = useCallback(
     (changes) => {
-      // 'position' 변경만 스토어에 반영 — 무한루프 방지
-      // placeholder 노드는 WorkflowNode 배열에 없으므로 제외
+      // Only sync 'position' to store to avoid infinite loop; exclude placeholder
       const placeholderId = placeholderNode?.id;
       const positionChanges = changes.filter(
         (c) => c.type === 'position' && c.id !== placeholderId,
@@ -177,22 +173,20 @@ function CanvasInner(): JSX.Element {
 
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  // screenToFlowPosition / openNodePicker를 ref로 유지 — useEffect 의존성 최소화
+  // Keep screenToFlowPosition / openNodePicker in ref to minimize effect deps
   const screenToFlowPositionRef = useRef(screenToFlowPosition);
   const openNodePickerRef = useRef(openNodePicker);
   useEffect(() => { screenToFlowPositionRef.current = screenToFlowPosition; });
   useEffect(() => { openNodePickerRef.current = openNodePicker; });
 
-  // 빈 공간 더블클릭 → 플레이스홀더 노드 생성 + NodePickerModal 열기
-  // React Flow 내부가 합성 이벤트를 소비할 수 있으므로
-  // capture phase 네이티브 리스너로 반드시 먼저 처리
+  // Double-click on empty area: create placeholder + open NodePickerModal (capture phase)
   useEffect(() => {
     const el = wrapperRef.current;
     if (!el) return;
 
     function handleDblClick(e: MouseEvent): void {
       const target = e.target as Element;
-      // 노드·엣지·컨트롤 위 클릭은 무시 (빈 배경만 처리)
+      // Ignore clicks on node/edge/controls
       if (
         target.closest('.react-flow__node') ||
         target.closest('.react-flow__edge') ||
@@ -200,7 +194,7 @@ function CanvasInner(): JSX.Element {
         target.closest('.react-flow__minimap')
       ) return;
 
-      // 기존 플레이스홀더 제거
+      // Remove existing placeholder
       const store = useWorkflowStore.getState();
       if (store.placeholderNode) store.closeNodePicker();
 
@@ -209,10 +203,10 @@ function CanvasInner(): JSX.Element {
       openNodePickerRef.current({ x: e.clientX, y: e.clientY }, placeholder);
     }
 
-    // capture: true → React Flow의 버블 단계 핸들러보다 먼저 실행
+    // capture: true so we run before React Flow's bubble handler
     el.addEventListener('dblclick', handleDblClick, { capture: true });
     return () => el.removeEventListener('dblclick', handleDblClick, { capture: true });
-  }, []); // 마운트 시 1회만 등록 (콜백은 ref로 최신 유지)
+  }, []); // Register once on mount; callbacks kept current via ref
 
   const handleFloatingAdd = useCallback((): void => {
     const el = wrapperRef.current;
@@ -292,7 +286,7 @@ function CanvasInner(): JSX.Element {
 
       <button
         onClick={handleFloatingAdd}
-        title="노드 추가"
+        title="Add node"
         style={{
           position: 'absolute',
           right: 24,

@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { CloseIcon } from '../icons/AppIcons';
+import { STATUS_ACCENT_COLOR } from '../../utils/statusColors';
 
 type NodeStatus = 'running' | 'success' | 'failed' | undefined;
 
@@ -27,17 +28,17 @@ interface NodeCardFrameProps {
 }
 
 function getStatusLineColor(status: NodeStatus, accentColor: string): string {
-  if (status === 'running') return '#2563eb';
-  if (status === 'success') return '#16a34a';
-  if (status === 'failed') return '#dc2626';
-  return accentColor;
+  return (status && STATUS_ACCENT_COLOR[status]) ?? accentColor;
 }
 
+const STATUS_BADGE_LABEL: Record<string, string> = {
+  running: 'RUNNING',
+  success: 'DONE',
+  failed: 'FAILED',
+};
+
 function getStatusBadge(status: NodeStatus): string {
-  if (status === 'running') return 'RUNNING';
-  if (status === 'success') return 'DONE';
-  if (status === 'failed') return 'FAILED';
-  return 'READY';
+  return (status && STATUS_BADGE_LABEL[status]) ?? 'READY';
 }
 
 function handleStyle(color: string, extra?: CSSProperties): CSSProperties {
@@ -98,7 +99,7 @@ export function NodeCardFrame({
           color: '#7b8494',
           cursor: 'pointer',
         }}
-        title="노드 삭제"
+        title="Delete node"
       >
         <CloseIcon size={13} />
       </button>

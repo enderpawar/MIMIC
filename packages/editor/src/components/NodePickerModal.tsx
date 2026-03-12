@@ -1,74 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { WorkflowNode } from '@flowcap/shared';
 import { useWorkflowStore } from '../store/workflowStore';
-import {
-  BellIcon,
-  ClockIcon,
-  CloseIcon,
-  CursorClickIcon,
-  DiamondSplitIcon,
-  HomeIcon,
-  NodeBadge,
-  SearchIcon,
-} from './icons/AppIcons';
-
-interface NodeTypeItem {
-  type: 'trigger' | 'action' | 'wait' | 'condition' | 'data';
-  label: string;
-  desc: string;
-  category: 'All types' | 'Basic' | 'Flow Control';
-  tone: string;
-  background: string;
-  icon: JSX.Element;
-}
-
-const NODE_TYPES_LIST: NodeTypeItem[] = [
-  {
-    type: 'trigger',
-    label: 'Start Node',
-    desc: '워크플로우 시작점',
-    category: 'Basic',
-    tone: '#2563eb',
-    background: 'linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%)',
-    icon: <HomeIcon size={18} />,
-  },
-  {
-    type: 'action',
-    label: 'Email Agent',
-    desc: '클릭·입력·이동 같은 실행 단계',
-    category: 'Basic',
-    tone: '#ea580c',
-    background: 'linear-gradient(135deg, #ffedd5 0%, #fff7ed 100%)',
-    icon: <CursorClickIcon size={18} />,
-  },
-  {
-    type: 'wait',
-    label: 'Creative Writer',
-    desc: '시간 또는 요소 로딩 대기',
-    category: 'Flow Control',
-    tone: '#d97706',
-    background: 'linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%)',
-    icon: <ClockIcon size={18} />,
-  },
-  {
-    type: 'condition',
-    label: 'Condition',
-    desc: 'true / false 분기 처리',
-    category: 'Flow Control',
-    tone: '#475569',
-    background: 'linear-gradient(135deg, #e2e8f0 0%, #f8fafc 100%)',
-    icon: <DiamondSplitIcon size={18} />,
-  },
-  {
-    type: 'data',
-    label: 'Notification',
-    desc: '데이터 추출 및 저장',
-    category: 'Basic',
-    tone: '#7c3aed',
-    background: 'linear-gradient(135deg, #f3e8ff 0%, #faf5ff 100%)',
-    icon: <BellIcon size={18} />,
-  },
-];
+import { CloseIcon, NodeBadge, SearchIcon } from './icons/AppIcons';
+import { NODE_DEFINITIONS } from '../constants/nodeDefinitions';
+import type { NodeCategory } from '../constants/nodeDefinitions';
 
 const POPUP_W = 520;
 const POPUP_H = 420;
@@ -80,26 +15,26 @@ export function createDefaultNode(
   const id = crypto.randomUUID();
   switch (type) {
     case 'action':
-      return { id, type: 'action', label: '새 액션', position, action: { kind: 'click', selector: '', url: '' } };
+      return { id, type: 'action', label: 'New action', position, action: { kind: 'click', selector: '', url: '' } };
     case 'wait':
-      return { id, type: 'wait', label: '새 대기', position, wait: { kind: 'duration', ms: 1000 } };
+      return { id, type: 'wait', label: 'New wait', position, wait: { kind: 'duration', ms: 1000 } };
     case 'condition':
-      return { id, type: 'condition', label: '새 조건', position, condition: { selector: '', operator: 'exists' } };
+      return { id, type: 'condition', label: 'New condition', position, condition: { selector: '', operator: 'exists' } };
     case 'data':
-      return { id, type: 'data', label: '새 데이터', position, data: { selector: '', attribute: 'textContent', variableName: 'var1' } };
+      return { id, type: 'data', label: 'New data', position, data: { selector: '', attribute: 'textContent', variableName: 'var1' } };
     default:
-      return { id, type: 'trigger', label: '새 트리거', position, trigger: { kind: 'manual' } };
+      return { id, type: 'trigger', label: 'New trigger', position, trigger: { kind: 'manual' } };
   }
 }
 
 export function NodePickerModal(): JSX.Element | null {
   const { pickerPos, placeholderNode, closeNodePicker, addNode } = useWorkflowStore();
   const [query, setQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState<'All types' | 'Basic' | 'Flow Control'>('All types');
+  const [activeCategory, setActiveCategory] = useState<NodeCategory>('All types');
 
   const handleClose = useCallback((): void => {
     setQuery('');
-    closeNodePicker(); // placeholderNode도 함께 제거됨
+    closeNodePicker(); // also removes placeholderNode
   }, [closeNodePicker]);
 
   useEffect(() => {
@@ -116,16 +51,16 @@ export function NodePickerModal(): JSX.Element | null {
 
   if (!pickerPos || !placeholderNode) return null;
 
-  const filtered = NODE_TYPES_LIST.filter(
+  const filtered = NODE_DEFINITIONS.filter(
     (item) =>
       (activeCategory === 'All types' || item.category === activeCategory) &&
       (
         item.label.toLowerCase().includes(query.toLowerCase()) ||
-        item.desc.includes(query)
+        item.desc.toLowerCase().includes(query.toLowerCase())
       ),
   );
 
-  // 화면 경계를 벗어나지 않도록 팝업 위치 보정
+  // Clamp popup to viewport
   const rawLeft = pickerPos.screen.x + 8;
   const rawTop  = pickerPos.screen.y - 16;
   const left = Math.min(rawLeft, window.innerWidth  - POPUP_W - 16);
@@ -133,14 +68,14 @@ export function NodePickerModal(): JSX.Element | null {
 
   function handleSelect(type: string): void {
     if (!placeholderNode) return;
-    // 플레이스홀더 위치에 실제 노드 생성
+    // Create real node at placeholder position
     addNode(createDefaultNode(type, placeholderNode.position));
     handleClose();
   }
 
   return (
     <>
-      {/* 외부 클릭 시 닫기 오버레이 */}
+      {/* Overlay to close on outside click */}
       <div
         onClick={handleClose}
         style={{ position: 'fixed', inset: 0, zIndex: 999 }}
@@ -164,7 +99,7 @@ export function NodePickerModal(): JSX.Element | null {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px 12px' }}>
           <div>
             <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>Add a node</div>
-            <div style={{ marginTop: 4, fontSize: 12, color: '#6b7280' }}>원하는 단계를 선택해 플로우에 추가하세요.</div>
+            <div style={{ marginTop: 4, fontSize: 12, color: '#6b7280' }}>Choose a step to add to the flow.</div>
           </div>
           <button
             onClick={handleClose}
@@ -217,7 +152,7 @@ export function NodePickerModal(): JSX.Element | null {
           <div className="editor-scrollbar" style={{ flex: 1, maxHeight: 340, overflowY: 'auto', padding: '12px' }}>
             {filtered.length === 0 && (
               <div style={{ padding: '24px 16px', textAlign: 'center', color: '#9CA3AF', fontSize: 13 }}>
-                검색 결과가 없습니다
+                No results
               </div>
             )}
             {filtered.map((item) => (
@@ -251,6 +186,7 @@ export function NodePickerModal(): JSX.Element | null {
                   </div>
                 </div>
               </button>
+
             ))}
           </div>
 
@@ -268,7 +204,7 @@ export function NodePickerModal(): JSX.Element | null {
             ].map((cat) => (
               <button
                 key={cat.id}
-                onClick={() => setActiveCategory(cat.id as 'All types' | 'Basic' | 'Flow Control')}
+                onClick={() => setActiveCategory(cat.id as NodeCategory)}
                 style={{
                   width: '100%',
                   display: 'flex',
@@ -295,7 +231,7 @@ export function NodePickerModal(): JSX.Element | null {
               HINT
             </div>
             <div style={{ padding: '4px', fontSize: 11, color: '#9CA3AF', lineHeight: 1.7 }}>
-              빈 공간 더블클릭<br />→ "+" 노드 생성<br />→ 클릭하여 타입 선택
+              Double-click empty space → "+" node → click to choose type
             </div>
           </div>
         </div>

@@ -27,7 +27,7 @@ export function ImportPanel(): JSX.Element {
 
       if (actions.length === 0) {
         setStatus('error');
-        setErrorMsg('녹화된 액션이 없습니다. Extension에서 먼저 녹화해주세요.');
+        setErrorMsg('No captured actions. Record in the extension first.');
         return;
       }
 
@@ -36,7 +36,7 @@ export function ImportPanel(): JSX.Element {
         actions,
       });
 
-      // Interpreter는 position을 생성하지 않으므로 없으면 세로 방향으로 자동 배치
+      // Interpreter may not set position; fallback to vertical layout
       const nodesWithPositions = res.workflow.nodes.map((node, i) => ({
         ...node,
         position: node.position ?? { x: 200, y: 80 + i * 140 },
@@ -47,7 +47,7 @@ export function ImportPanel(): JSX.Element {
       setStatus('success');
     } catch (err) {
       setStatus('error');
-      setErrorMsg(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
+      setErrorMsg(err instanceof Error ? err.message : 'An unexpected error occurred.');
     }
   }
 
@@ -65,8 +65,7 @@ export function ImportPanel(): JSX.Element {
           color: '#9a3412',
           lineHeight: 1.6,
         }}>
-          Chrome Extension 팝업에서 에디터를 열거나,<br />
-          Extension이 설치된 환경에서 실행해주세요.
+          Open the editor from the Chrome Extension popup, or run in an environment with the extension installed.
         </div>
       </div>
     );
@@ -82,7 +81,7 @@ export function ImportPanel(): JSX.Element {
         style={btnStyle(status === 'loading')}
       >
         <ImportIcon size={15} />
-        Extension에서 불러오기
+        Import from extension
       </button>
 
       {status === 'loading' && <LoadingState />}
@@ -92,7 +91,7 @@ export function ImportPanel(): JSX.Element {
   );
 }
 
-// chrome.storage.local에서 capturedActions 읽기
+// Read capturedActions from chrome.storage.local
 function readCapturedActions(): Promise<CapturedAction[]> {
   return new Promise((resolve) => {
     if (typeof chrome === 'undefined') { resolve([]); return; }
@@ -111,10 +110,10 @@ function SectionTitle(): JSX.Element {
         Import
       </div>
       <div style={{ fontWeight: 700, fontSize: 16, color: '#111827', marginTop: 12 }}>
-        Extension 불러오기
+        Import from extension
       </div>
       <div style={{ fontSize: 12, color: '#6B7280', marginTop: 6 }}>
-        Extension 녹화 내용을 AI로 변환
+        Convert extension recording to workflow via AI
       </div>
     </div>
   );
@@ -125,8 +124,8 @@ function LoadingState(): JSX.Element {
     <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
       <Spinner />
       <div style={{ fontSize: 12, color: '#6B7280', textAlign: 'center', lineHeight: 1.5 }}>
-        AI가 워크플로우를 생성 중입니다...<br />
-        <span style={{ fontSize: 11, color: '#9CA3AF' }}>최초 실행 시 최대 30초 소요</span>
+        Generating workflow...<br />
+        <span style={{ fontSize: 11, color: '#9CA3AF' }}>First run may take up to 30s</span>
       </div>
     </div>
   );
@@ -147,21 +146,21 @@ function SuccessState({ confidence, warnings, onReset }: {
         fontSize: 12,
         color: '#065f46',
       }}>
-        <div style={{ fontWeight: 600, marginBottom: 4 }}>✓ 불러오기 완료</div>
+        <div style={{ fontWeight: 600, marginBottom: 4 }}>✓ Import complete</div>
         {confidence !== null && (
-          <div>AI 신뢰도: <strong>{Math.round(confidence * 100)}%</strong></div>
+          <div>Confidence: <strong>{Math.round(confidence * 100)}%</strong></div>
         )}
       </div>
       {warnings.length > 0 && (
         <div style={{ marginTop: 8, fontSize: 11, color: '#92400e' }}>
-          <div style={{ fontWeight: 600, marginBottom: 4 }}>⚠ 주의사항</div>
+          <div style={{ fontWeight: 600, marginBottom: 4 }}>⚠ Warnings</div>
           <ul style={{ margin: 0, padding: '0 0 0 14px', lineHeight: 1.6 }}>
             {warnings.map((w, i) => <li key={i}>{w}</li>)}
           </ul>
         </div>
       )}
       <button onClick={onReset} style={{ ...btnStyle(false), marginTop: 8, background: '#f3f4f6', color: '#374151' }}>
-        다시 불러오기
+        Import again
       </button>
     </div>
   );
@@ -182,7 +181,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
         ✕ {message}
       </div>
       <button onClick={onRetry} style={{ ...btnStyle(false), marginTop: 8 }}>
-        다시 시도
+        Retry
       </button>
     </div>
   );

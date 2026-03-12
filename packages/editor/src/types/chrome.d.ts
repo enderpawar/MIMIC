@@ -1,4 +1,4 @@
-// Editor는 Chrome Extension이 아니므로 필요한 chrome API만 최소 선언
+// Editor is not a Chrome extension; minimal chrome API declaration for import
 declare const chrome:
   | {
       storage: {

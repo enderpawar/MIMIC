@@ -11,13 +11,13 @@ export function NodeEditPanel(): JSX.Element {
   const [selector, setSelector] = useState('');
   const [value, setValue] = useState('');
 
-  // 패널 열릴 때 현재 값으로 초기화 — [fix] node?.id 대신 selectedNodeId 사용
+  // Initialize form when panel opens (use selectedNodeId, not node?.id)
   useEffect(() => {
     if (!node) return;
     setLabel(node.label);
     setSelector(getSelector(node));
     setValue(getValue(node));
-    // node는 selectedNodeId로부터 파생되므로 selectedNodeId만 의존
+    // node is derived from selectedNodeId
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedNodeId]);
 
@@ -89,7 +89,7 @@ export function NodeEditPanel(): JSX.Element {
             Node Editor
           </div>
           <div style={{ marginTop: 10, fontWeight: 700, fontSize: 18, color: '#111827' }}>
-            {node ? `${typeLabel(node.type)} 편집` : '노드 편집'}
+            {node ? `Edit ${typeLabel(node.type)}` : 'Edit node'}
           </div>
         </div>
         <button
@@ -112,7 +112,7 @@ export function NodeEditPanel(): JSX.Element {
 
       {node && (
         <div className="editor-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: 18, display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <Field label="라벨" value={label} onChange={setLabel} />
+          <Field label="Label" value={label} onChange={setLabel} />
 
           {(node.type === 'action' || node.type === 'condition' || node.type === 'wait' || node.type === 'data') && (
             <Field label="Selector" value={selector} onChange={setSelector} mono />
@@ -123,15 +123,15 @@ export function NodeEditPanel(): JSX.Element {
           )}
 
           {node.type === 'wait' && (node as WaitNode).wait.kind === 'duration' && (
-            <Field label="대기 시간 (ms)" value={value} onChange={setValue} type="number" />
+            <Field label="Wait (ms)" value={value} onChange={setValue} type="number" />
           )}
 
           {node.type === 'condition' && (
-            <Field label="비교 값" value={value} onChange={setValue} />
+            <Field label="Compare value" value={value} onChange={setValue} />
           )}
 
           {node.type === 'data' && (
-            <Field label="변수명" value={value} onChange={setValue} />
+            <Field label="Variable name" value={value} onChange={setValue} />
           )}
         </div>
       )}
@@ -152,7 +152,7 @@ export function NodeEditPanel(): JSX.Element {
             boxShadow: '0 16px 32px rgba(15, 23, 42, 0.18)',
           }}
         >
-          변경 사항 저장
+          Save changes
         </button>
       </div>
     </div>
@@ -201,11 +201,11 @@ function getValue(node: WorkflowNode): string {
 
 function typeLabel(type: WorkflowNode['type']): string {
   const map: Partial<Record<WorkflowNode['type'], string>> = {
-    trigger: '트리거',
-    action: '액션',
-    wait: '대기',
-    condition: '조건',
-    data: '데이터',
+    trigger: 'Trigger',
+    action: 'Action',
+    wait: 'Wait',
+    condition: 'Condition',
+    data: 'Data',
   };
   return map[type] ?? type;
 }

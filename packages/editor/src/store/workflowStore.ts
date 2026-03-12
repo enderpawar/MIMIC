@@ -19,9 +19,9 @@ interface WorkflowState {
   selectedNodeId: string | null;
   nodeRunStatus: Record<string, 'running' | 'success' | 'failed'>;
   runError: string | null;
-  /** 팝업 화면 좌표 */
+  /** Screen position for picker popup */
   pickerPos: PickerPos | null;
-  /** 플레이스홀더 노드 (더블클릭 시 생성, 타입 선택 후 제거) */
+  /** Placeholder node (created on double-click, removed after type selection) */
   placeholderNode: PlaceholderNode | null;
   setWorkflow: (nodes: WorkflowNode[], edges: WorkflowEdge[]) => void;
   addNode: (node: WorkflowNode) => void;
@@ -32,9 +32,9 @@ interface WorkflowState {
   setSelectedNodeId: (id: string | null) => void;
   clearRunStatus: () => void;
   setRunError: (message: string) => void;
-  /** 더블클릭: 플레이스홀더 생성 + 피커 열기 */
+  /** Double-click: create placeholder and open picker */
   openNodePicker: (screen: { x: number; y: number }, placeholder: PlaceholderNode) => void;
-  /** 플레이스홀더 노드 클릭: 피커만 열기 (이미 존재하는 플레이스홀더) */
+  /** Click placeholder: open picker only (reuse existing placeholder) */
   reopenNodePicker: (screen: { x: number; y: number }) => void;
   closeNodePicker: () => void;
 }

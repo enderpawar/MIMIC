@@ -1,8 +1,7 @@
 # Make.com 스타일 UI 전환 방안
 
 > 작성일: 2026-03-10  
-> 대상 패키지: `packages/editor`  
-> 참고 레퍼런스: Make.com 워크플로우 에디터 UI
+> 대상 패키지: `packages/editor`
 
 ---
 

@@ -22,7 +22,7 @@ export async function interpret(body: InterpretRequest): Promise<InterpretRespon
         const parsed = JSON.parse(text) as { detail?: string };
         if (parsed.detail) message = parsed.detail;
       } catch {
-        // 파싱 실패 시 기본 메시지 사용
+        // Use default message on parse failure
       }
       throw new Error(message);
     }
@@ -30,7 +30,7 @@ export async function interpret(body: InterpretRequest): Promise<InterpretRespon
     return res.json() as Promise<InterpretResponse>;
   } catch (err) {
     if (err instanceof Error && err.name === 'AbortError') {
-      throw new Error('interpreter 응답 시간 초과 (30초). Render 콜드스타트 중일 수 있습니다.');
+      throw new Error('Interpreter timeout (30s). Render may be cold starting.');
     }
     throw err;
   } finally {

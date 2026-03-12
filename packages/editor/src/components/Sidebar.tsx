@@ -1,10 +1,6 @@
 import type { JSX } from 'react';
 import {
-  BellIcon,
   ChartIcon,
-  ClockIcon,
-  CursorClickIcon,
-  DiamondSplitIcon,
   FileIcon,
   HomeIcon,
   LayersIcon,
@@ -17,64 +13,7 @@ import {
 } from './icons/AppIcons';
 import { useWorkflowStore } from '../store/workflowStore';
 import { createDefaultNode } from './NodePickerModal';
-
-interface PaletteItem {
-  type: 'trigger' | 'action' | 'wait' | 'condition' | 'data';
-  title: string;
-  subtitle: string;
-  description: string;
-  tone: string;
-  background: string;
-  icon: JSX.Element;
-}
-
-const NODE_PALETTE: PaletteItem[] = [
-  {
-    type: 'trigger',
-    title: 'Start Node',
-    subtitle: 'Manual trigger',
-    description: '워크플로우 시작점을 추가합니다.',
-    tone: '#2563eb',
-    background: 'linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%)',
-    icon: <HomeIcon size={18} />,
-  },
-  {
-    type: 'action',
-    title: 'Email Agent',
-    subtitle: 'Action step',
-    description: '클릭, 입력, 이동 같은 브라우저 액션을 추가합니다.',
-    tone: '#ea580c',
-    background: 'linear-gradient(135deg, #ffedd5 0%, #fff7ed 100%)',
-    icon: <CursorClickIcon size={18} />,
-  },
-  {
-    type: 'wait',
-    title: 'Creative Writer',
-    subtitle: 'Delay or wait',
-    description: '요소 로딩 또는 일정 시간 대기 단계를 추가합니다.',
-    tone: '#d97706',
-    background: 'linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%)',
-    icon: <ClockIcon size={18} />,
-  },
-  {
-    type: 'condition',
-    title: 'Condition',
-    subtitle: 'True / false split',
-    description: '조건 분기를 통해 다른 경로로 이어집니다.',
-    tone: '#475569',
-    background: 'linear-gradient(135deg, #e2e8f0 0%, #f8fafc 100%)',
-    icon: <DiamondSplitIcon size={18} />,
-  },
-  {
-    type: 'data',
-    title: 'Notification',
-    subtitle: 'Extract data',
-    description: '페이지에서 텍스트나 속성을 추출합니다.',
-    tone: '#7c3aed',
-    background: 'linear-gradient(135deg, #f3e8ff 0%, #faf5ff 100%)',
-    icon: <BellIcon size={18} />,
-  },
-];
+import { NODE_DEFINITIONS } from '../constants/nodeDefinitions';
 
 const RAIL_ITEMS = [
   { id: 'home', icon: <HomeIcon size={18} />, active: true },
@@ -90,7 +29,7 @@ export function Sidebar(): JSX.Element {
   const addNode = useWorkflowStore((state) => state.addNode);
   const nodes = useWorkflowStore((state) => state.nodes);
 
-  function handleAdd(type: PaletteItem['type']): void {
+  function handleAdd(type: (typeof NODE_DEFINITIONS)[number]['type']): void {
     const index = nodes.length;
     addNode(createDefaultNode(type, { x: 140 + index * 70, y: 120 + index * 36 }));
   }
@@ -153,7 +92,7 @@ export function Sidebar(): JSX.Element {
             fontWeight: 700,
           }}
         >
-          JM
+          U
         </div>
       </div>
 
@@ -171,7 +110,7 @@ export function Sidebar(): JSX.Element {
           <div>
             <div className="editor-section-title">Node Library</div>
             <p className="editor-section-caption" style={{ marginTop: 6 }}>
-              피그마 레퍼런스처럼 카드형 노드를 빠르게 추가할 수 있는 패널입니다.
+              Add node cards from the library.
             </p>
           </div>
 
@@ -205,12 +144,12 @@ export function Sidebar(): JSX.Element {
             </div>
             <div style={{ marginTop: 12, fontSize: 18, fontWeight: 700 }}>Build automation faster</div>
             <p style={{ margin: '8px 0 0', fontSize: 13, lineHeight: 1.6, color: 'rgba(255,255,255,0.76)' }}>
-              Start, action, wait, condition 노드를 조합해 워크플로우를 빠르게 구성하세요.
+              Combine start, action, wait, and condition nodes to build your workflow.
             </p>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {NODE_PALETTE.map((item) => (
+            {NODE_DEFINITIONS.map((item) => (
               <button
                 key={item.type}
                 type="button"
@@ -233,7 +172,7 @@ export function Sidebar(): JSX.Element {
                   {item.icon}
                 </NodeBadge>
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{item.title}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{item.label}</div>
                   <div style={{ marginTop: 2, fontSize: 12, fontWeight: 600, color: '#6b7280' }}>{item.subtitle}</div>
                   <div style={{ marginTop: 8, fontSize: 12, lineHeight: 1.5, color: '#6b7280' }}>{item.description}</div>
                 </div>
