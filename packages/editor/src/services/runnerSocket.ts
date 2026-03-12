@@ -2,7 +2,7 @@ import { io, Socket } from 'socket.io-client';
 import type { Workflow } from '@flowcap/shared';
 import { useWorkflowStore } from '../store/workflowStore';
 
-const RUNNER_URL = import.meta.env.VITE_RUNNER_URL as string;
+const RUNNER_URL: string = import.meta.env.VITE_RUNNER_URL ?? 'http://localhost:3001';
 
 let socket: Socket | null = null;
 
@@ -70,5 +70,14 @@ export async function startRun(workflow: Workflow): Promise<void> {
     setRunError(message);
     socket?.disconnect();
     socket = null;
+  });
+
+  // Reset isRunning if the socket drops unexpectedly (runner crash, network loss)
+  socket.on('disconnect', (reason) => {
+    if (reason !== 'io client disconnect') {
+      setRunning(false);
+      setRunError(`Connection lost: ${reason}`);
+      socket = null;
+    }
   });
 }

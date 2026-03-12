@@ -1,6 +1,6 @@
 import type { InterpretRequest, InterpretResponse } from '@flowcap/shared';
 
-const INTERPRETER_URL = import.meta.env.VITE_INTERPRETER_URL as string;
+const INTERPRETER_URL: string = import.meta.env.VITE_INTERPRETER_URL ?? 'http://localhost:8000';
 const TIMEOUT_MS = 30_000;
 
 export async function interpret(body: InterpretRequest): Promise<InterpretResponse> {
