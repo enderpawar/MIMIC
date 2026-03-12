@@ -120,6 +120,17 @@ export const SparklesIcon = createIcon(
   </>,
 );
 
+export const FlowIcon = createIcon(
+  <>
+    <rect x="3.5" y="4" width="5" height="4.5" rx="2" stroke="currentColor" strokeWidth="1.6" />
+    <rect x="15.5" y="4" width="5" height="4.5" rx="2" stroke="currentColor" strokeWidth="1.6" />
+    <rect x="9.5" y="15" width="5" height="4.5" rx="2" stroke="currentColor" strokeWidth="1.6" />
+    <path d="M8.5 6.25H15.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    <path d="M6.5 8.5V12H12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    <path d="M19.5 8.5V12H12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+  </>,
+);
+
 export const ImportIcon = createIcon(
   <>
     <path d="M12 4V14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />

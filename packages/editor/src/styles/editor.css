@@ -10,6 +10,7 @@
   --editor-text-soft: #6c7484;
   --editor-text-faint: #98a0ae;
   --editor-canvas-dot: #dfe4ea;
+  --editor-connection-line: #94a3b8;
   --editor-shadow-lg: 0 20px 48px rgba(15, 23, 42, 0.12);
   --editor-shadow-md: 0 10px 30px rgba(15, 23, 42, 0.08);
   --editor-shadow-sm: 0 4px 14px rgba(15, 23, 42, 0.06);
@@ -97,7 +98,6 @@ button {
   padding: 6px 10px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.84);
-  border: 1px solid var(--editor-border);
   color: var(--editor-text-soft);
   font-size: 12px;
   font-weight: 600;
@@ -251,4 +251,24 @@ button {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* 빈 노드(플레이스홀더) 생성 시 등장 애니메이션 */
+@keyframes placeholder-node-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+  65% {
+    transform: scale(1.03);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.editor-placeholder-node-enter {
+  animation: placeholder-node-enter 0.32s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
+  transform-origin: left center;
 }

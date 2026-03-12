@@ -44,18 +44,18 @@ export function RunPanel(): JSX.Element {
       {/* Log drawer above toolbar */}
       {logOpen && runLog.length > 0 && (
         <div style={{
-          position: 'fixed',
+          position: 'absolute',
           bottom: 96,
-          left: 'calc(var(--editor-app-sidebar-width) + 18px)',
+          left: 18,
           right: 18,
-          maxHeight: 240,
+          maxHeight: 220,
           background: 'rgba(15, 23, 42, 0.94)',
           border: '1px solid rgba(255,255,255,0.06)',
           borderRadius: 22,
           overflowY: 'auto',
           zIndex: 49,
           padding: '10px 0',
-          boxShadow: '0 24px 48px rgba(15, 23, 42, 0.28)',
+          boxShadow: 'none',
           backdropFilter: 'blur(18px)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -122,24 +122,23 @@ export function RunPanel(): JSX.Element {
 
       {/* Bottom toolbar */}
       <div style={{
-        position: 'fixed',
+        position: 'absolute',
         bottom: 18,
-        left: 'calc(var(--editor-app-sidebar-width) + 18px)',
+        left: 18,
         right: 18,
-        height: 'var(--editor-bottom-bar-height)',
-        background: 'rgba(255,255,255,0.94)',
-        border: '1px solid rgba(15, 23, 42, 0.08)',
+        height: 64,
+        background: '#ffffff',
+        border: 'none',
         borderRadius: 22,
-        boxShadow: 'var(--editor-shadow-lg)',
-        backdropFilter: 'blur(18px)',
+        boxShadow: 'none',
+        backdropFilter: 'none',
         display: 'flex',
         alignItems: 'center',
         padding: '0 18px',
         gap: 12,
         zIndex: 50,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', borderRadius: 8, overflow: 'hidden',
-          boxShadow: '0 12px 24px rgba(15, 23, 42, 0.16)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', borderRadius: 8, overflow: 'hidden' }}>
           <button
             onClick={handleRun}
             disabled={isRunning}
@@ -176,8 +175,6 @@ export function RunPanel(): JSX.Element {
             <ChevronDownIcon size={14} />
           </button>
         </div>
-
-        <div style={{ width: 1, height: 28, background: '#E5E7EB' }} />
 
         {runLog.length > 0 && (
           <button

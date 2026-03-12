@@ -21,6 +21,8 @@ import {
 import '@xyflow/react/dist/style.css';
 import type { WorkflowNode, WorkflowEdge } from '@flowcap/shared';
 import { useWorkflowStore } from '../store/workflowStore';
+import { RunPanel } from './RunPanel';
+import { ElasticConnectionLine } from './ElasticConnectionLine';
 import { PlusIcon } from './icons/AppIcons';
 import {
   TriggerNodeCard,
@@ -66,7 +68,7 @@ function toFlowEdges(edges: WorkflowEdge[]): Edge[] {
     sourceHandle: e.label,
     label: e.label,
     animated: false,
-    type: 'smoothstep',
+    type: 'default',
     style: {
       strokeDasharray: '5 7',
       stroke: '#a8b0bd',
@@ -179,7 +181,7 @@ function CanvasInner(): JSX.Element {
   useEffect(() => { screenToFlowPositionRef.current = screenToFlowPosition; });
   useEffect(() => { openNodePickerRef.current = openNodePicker; });
 
-  // Double-click on empty area: create placeholder + open NodePickerModal (capture phase)
+  // Double-click on empty area: create placeholder "+" node only (menu opens on click)
   useEffect(() => {
     const el = wrapperRef.current;
     if (!el) return;
@@ -194,13 +196,13 @@ function CanvasInner(): JSX.Element {
         target.closest('.react-flow__minimap')
       ) return;
 
-      // Remove existing placeholder
-      const store = useWorkflowStore.getState();
-      if (store.placeholderNode) store.closeNodePicker();
-
       const flow = screenToFlowPositionRef.current({ x: e.clientX, y: e.clientY });
       const placeholder = { id: crypto.randomUUID(), position: flow };
-      openNodePickerRef.current({ x: e.clientX, y: e.clientY }, placeholder);
+      // Clear any existing picker and set new placeholder; picker opens when "+" is clicked
+      useWorkflowStore.setState({
+        pickerPos: null,
+        placeholderNode: placeholder,
+      });
     }
 
     // capture: true so we run before React Flow's bubble handler
@@ -235,7 +237,9 @@ function CanvasInner(): JSX.Element {
       style={{
         width: '100%',
         height: '100%',
-        borderRadius: '28px',
+        borderRadius: '22px',
+        boxShadow: 'none',
+        border: 'none',
         overflow: 'hidden',
         position: 'relative',
       }}
@@ -252,7 +256,6 @@ function CanvasInner(): JSX.Element {
         }}
       >
         <div className="editor-pill">Canvas</div>
-        <div className="editor-pill">Double click to add</div>
       </div>
 
       <ReactFlow
@@ -264,48 +267,18 @@ function CanvasInner(): JSX.Element {
         onConnect={onConnect}
         onNodeClick={onNodeClick}
         onPaneClick={() => setSelectedNodeId(null)}
+        connectionLineComponent={ElasticConnectionLine}
         defaultViewport={{ x: 120, y: 100, zoom: 0.9 }}
         minZoom={0.2}
         maxZoom={2}
         fitView={false}
+        zoomOnDoubleClick={false}
         proOptions={{ hideAttribution: true }}
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1.1} color="var(--editor-canvas-dot)" />
-        <Controls
-          showInteractive={false}
-          style={{
-            bottom: 18,
-            left: 18,
-            border: '1px solid rgba(15, 23, 42, 0.08)',
-            borderRadius: 16,
-            overflow: 'hidden',
-            boxShadow: '0 12px 24px rgba(15, 23, 42, 0.10)',
-          }}
-        />
       </ReactFlow>
 
-      <button
-        onClick={handleFloatingAdd}
-        title="Add node"
-        style={{
-          position: 'absolute',
-          right: 24,
-          bottom: 24,
-          width: 62,
-          height: 62,
-          display: 'grid',
-          placeItems: 'center',
-          border: 'none',
-          borderRadius: 999,
-          background: '#ffffff',
-          color: '#111827',
-          boxShadow: '0 18px 34px rgba(15, 23, 42, 0.18)',
-          cursor: 'pointer',
-          zIndex: 6,
-        }}
-      >
-        <PlusIcon size={26} />
-      </button>
+      <RunPanel />
     </div>
   );
 }
